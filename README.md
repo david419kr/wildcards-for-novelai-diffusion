@@ -31,12 +31,25 @@ Works like a1111 webui's wildcards extension, and the wildcards txt files for a1
 A folder named something like "wildcards-for-novelai-diffusion-main" will appear.  
 Tip: Make sure manifest.json is visible directly inside this folder—not nested in another sub‑folder.  
 
-**2. Chrome Settings** 
+[ZIPをDL](https://github.com/david419kr/wildcards-for-novelai-diffusion/archive/refs/heads/main.zip)して、解凍してください。  
+wildcards-for-novelai-diffusion-mainという風にフォルダーが生成されるはずです。  
+フォルダーを開けてすぐ、manifest.jsonが見える状態であることを確認してください。（フォルダーの中にまたサブフォルダーがある状態ではないこと）  
+
+**2. Chrome Settings**  
 In the address bar, type chrome://extensions and press Enter. 
 Toggle Developer mode (top‑right corner) to ON.  
 Load the unpacked extension above.  
 You should now see “Wildcards for NovelAI Diffusion 4.0” in the list, with a toggle switch on.  
+
+Chromeのアドレスバーに、chrome://extensionsと入力し入ります。  
+右上のデベロッパーモードをONにします。  
+上で解凍したフォルダーを読み込みます。  
+"Wildcards for NovelAI Diffusion 4.0"がリストに現れる筈です。スイッチがONになっていることを確認してください。  
   
 That's it!  
 Now you can manage your wildcards txt files at extension menu, then use wildcards in NovelAI as a1111 webui.  
 Just make sure you refresh novelai.net page before first using the extension, if novelai.net is already open.  
+
+これで準備OKです！  
+拡張機能のアイコンをクリックしてWildcardsのtxtファイルを管理できます。  
+拡張機能を入れてから初回起動時のみ、念のためNAIのページを一回リロードしてから使ってください。
