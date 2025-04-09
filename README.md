@@ -10,7 +10,7 @@ Works like a1111 webui's wildcards extension, and the wildcards txt files for a1
 ## ✨ Features
 | | |
 |---|---|
-| **Wildcard replacement** | Detects `__name__` tokens anywhere in the JSON payload (including Character prompts). |
+| **Wildcard replacement** | Detects `__name__` tokens anywhere in the JSON payload (including Character prompts). Replaces '\\\(' and '\\\)' to '(' and ')'.|
 | **Set your wildcards txt files** | Upload `.txt` wildcards. Files are not sent anywhere, just stored in local storage. Files can be added and deleted at extension menu.|
 | **Prompt replacement** | Converts lines to NovelAI’s original dynamic prompting syntax. |
 | **Zero external calls** | All data lives in Chrome Storage; nothing ever leaves your browser. |
@@ -34,4 +34,5 @@ Load the unpacked extension above.
 You should now see “Wildcards for NovelAI Diffusion 4.0” in the list, with a toggle switch on.  
   
 That's it!  
-Now you can manage your wildcards txt files at extension menu, then use wildcards in NovelAI as a1111 webui.
+Now you can manage your wildcards txt files at extension menu, then use wildcards in NovelAI as a1111 webui.  
+Just make sure you refresh novelai.net page before first using the extension, if novelai.net is already open.  
