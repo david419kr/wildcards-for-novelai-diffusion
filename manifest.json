@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Wildcards for NovelAI Diffusion 4.0",
+  "description": "swap __wildcards__ prompts to .txt file content",
+  "version": "2.0.0",
+  "permissions": ["storage", "scripting", "activeTab"],
+  "host_permissions": ["https://image.novelai.net/*"],
+  "content_scripts": [
+    {
+      "matches": ["*://*.novelai.net/*"],
+      "js": ["bridge.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["injector.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "action": { "default_popup": "popup.html" }
+}
