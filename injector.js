@@ -12,8 +12,11 @@
 
   /******** 1. swap logic ********/
   const swap = txt => txt.replace(WILDCARD, (_, name) => {
-    const raw = dict[name];
+    let raw = dict[name];
     if (!raw) return _;
+  
+    raw = raw.replace(/\\/g, '');
+  
     const parts = raw.split(/\r?\n/).filter(Boolean);
     return parts.length ? `||${parts.join('|')}||` : _;
   });
