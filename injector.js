@@ -79,5 +79,129 @@
     return $send.call(this, body);
   };
 
+    /******* 3. Autocomplete ********/
+  (function initWildcardAutocomplete_PM () {
+    const STYLE = `
+    .wildcard-suggest{
+      position:absolute; z-index:2147483647; background:#222; color:#fff;
+      border:1px solid #555; border-radius:4px; font-size:12px;
+      max-height:240px; overflow-y:auto; box-shadow:0 2px 8px #000a;
+    }
+    .wildcard-suggest li{padding:3px 8px; cursor:pointer; white-space:nowrap;}
+    .wildcard-suggest li.active{background:#444;}
+    `;
+    const styleEl = document.createElement('style');
+    styleEl.textContent = STYLE;
+    document.head.appendChild(styleEl);
+
+    const seen = new WeakSet();
+    const mo   = new MutationObserver(scan);
+    mo.observe(document, {childList:true, subtree:true});
+    scan();
+
+    function scan () {
+      document.querySelectorAll('div.ProseMirror[contenteditable="true"]')
+        .forEach(el => { if (!seen.has(el)) hook(el); });
+    }
+
+    function hook (editor) {
+      seen.add(editor);
+
+      const list = document.createElement('ul');
+      list.className = 'wildcard-suggest';
+      list.style.display = 'none';
+      document.body.appendChild(list);
+
+      let selIdx = -1;
+
+      editor.addEventListener('input',  update);
+      editor.addEventListener('keydown', nav);
+      editor.addEventListener('blur',   hide, true);   // capture 단계
+
+      function textBeforeCaret () {
+        const sel = window.getSelection();
+        if (!sel || !sel.anchorNode || !editor.contains(sel.anchorNode)) return '';
+        const rng = sel.getRangeAt(0).cloneRange();
+        rng.collapse(true);
+        rng.setStart(editor, 0);
+        return rng.toString();
+      }
+
+      function update () {
+        const txt = textBeforeCaret();
+        const m   = txt.match(/__([A-Za-z0-9_-]*)$/);
+        if (!m) return hide();
+
+        const prefix = m[1].toLowerCase();
+        const keys   = Object.keys(dict)
+                      .filter(k => k.toLowerCase().startsWith(prefix))
+                      .sort();
+        if (!keys.length) return hide();
+
+        list.innerHTML = keys.map(k => `<li>__${k}__</li>`).join('');
+        selIdx = 0; highlight();
+
+        const sel = window.getSelection();
+        const rng = sel.getRangeAt(0).cloneRange();
+        const rect= rng.getBoundingClientRect();
+        list.style.left   = (rect.left + window.scrollX) + 'px';
+        list.style.top    = (rect.bottom + window.scrollY + 2) + 'px';
+        list.style.display= 'block';
+      }
+
+      function nav (e) {
+        if (list.style.display === 'none') return;
+
+        const items = list.querySelectorAll('li');
+        if (!items.length) return;
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault(); selIdx = (selIdx + 1) % items.length; highlight();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault(); selIdx = (selIdx - 1 + items.length) % items.length; highlight();
+        } else if (e.key === 'Enter' || e.key === 'Tab') {
+          e.preventDefault(); choose(items[selIdx]);
+        } else if (e.key === 'Escape') {
+          hide();
+        }
+      }
+
+      list.addEventListener('mousedown', e => {
+        if (e.target.tagName === 'LI') {
+          e.preventDefault(); choose(e.target);
+        }
+      });
+
+      function choose (li) {
+        const token = li.textContent;              
+        const sel   = window.getSelection();
+        const rng   = sel.getRangeAt(0);
+
+        const before = rng.cloneRange();
+        before.setStart(editor, 0);
+        const text = before.toString();
+        const len  = text.match(/__([A-Za-z0-9_-]*)$/)[0].length;
+        rng.setStart(rng.endContainer, rng.endOffset - len);
+        rng.deleteContents();
+
+        const node = document.createTextNode(token);
+        rng.insertNode(node);
+
+        sel.collapse(node, token.length);
+        hide();
+      }
+
+      function highlight () {
+        list.querySelectorAll('li').forEach((li,i)=>
+          li.classList.toggle('active', i===selIdx));
+      }
+      function hide () {
+        list.style.display = 'none'; selIdx = -1;
+      }
+    }
+  })();
+
   console.log('[Wildcard] injector ready');
 })();
+
+
