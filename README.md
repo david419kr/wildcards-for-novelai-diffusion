@@ -10,7 +10,7 @@ Works like a1111 webui's wildcards extension, and the wildcards txt files for a1
 ## ✨ Features
 | | |
 |---|---|
-| **Wildcard replacement** | Detects `__name__` tokens anywhere in the JSON payload (including Character prompts). |
+| **Wildcard replacement** | Detects `__name__` tokens anywhere in the JSON payload (including Character prompts). Replaces '\\\(' and '\\\)' to '(' and ')'.|
 | **Set your wildcards txt files** | Upload `.txt` wildcards. Files are not sent anywhere, just stored in local storage. Files can be added and deleted at extension menu.|
 | **Prompt replacement** | Converts lines to NovelAI’s original dynamic prompting syntax. |
 | **Zero external calls** | All data lives in Chrome Storage; nothing ever leaves your browser. |
