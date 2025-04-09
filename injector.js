@@ -14,8 +14,10 @@
   const swap = txt => txt.replace(WILDCARD, (_, name) => {
     let raw = dict[name];
     if (!raw) return _;
-  
-    raw = raw.replace(/\\/g, '');
+
+    raw = raw
+      .replace(/\\\(/g, '(')   // \(  → (
+      .replace(/\\\)/g, ')');  // \)  → )
   
     const parts = raw.split(/\r?\n/).filter(Boolean);
     return parts.length ? `||${parts.join('|')}||` : _;
