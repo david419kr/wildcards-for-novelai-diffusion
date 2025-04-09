@@ -13,13 +13,14 @@ Works like a1111 webui's wildcards extension, and the wildcards txt files for a1
 | **Wildcard replacement** | Detects `__name__` tokens anywhere in the JSON payload (including Character prompts). Replaces '\\\(' and '\\\)' to '(' and ')'.|
 | **Set your wildcards txt files** | Upload `.txt` wildcards. Files are not sent anywhere, just stored in local storage. Files can be added and deleted at extension menu.|
 | **Prompt replacement** | Converts lines to NovelAI’s original dynamic prompting syntax. |
-| **Supports Autocomplete** | Detects `__`  on text area, then autocompletes from your Wildcards txt files list.|
+| **Supports Autocomplete** | Detects `__`  on text area, then autocompletes from your Wildcards txt files list. Autocomplete can be select via "space", "enter", "tab". ("enter" and "tab" key collides with NAI's own autocomplete, so "space" recommended)|
 | **Zero external calls** | All data lives in Chrome Storage; nothing ever leaves your browser. |
 
 ---
 
 ## 🖼️ Screenshot
-![image](https://github.com/user-attachments/assets/f5b5217a-b108-4023-b0ad-f8408656b4aa)  
+![image](https://github.com/user-attachments/assets/f5b5217a-b108-4023-b0ad-f8408656b4aa)![image](https://github.com/user-attachments/assets/7bae13dd-03f1-4fb9-86a9-c2bb9af79a93)
+  
 ![ss](https://github.com/user-attachments/assets/3f67ae5c-43e3-48d0-b446-acb3781757c1)  
 ![ss2](https://github.com/user-attachments/assets/763a5d89-c578-47aa-a617-be212cca022a)  
 
