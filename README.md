@@ -41,13 +41,13 @@ Toggle Developer mode (top‑right corner) to ON.
 Load the unpacked extension above.  
 You should now see “Wildcards for NovelAI Diffusion 4.0” in the list, with a toggle switch on.  
 
-Chromeのアドレスバーに、chrome://extensionsと入力し入ります。  
+Chromeのアドレスバーに、chrome://extensionsと入力し、拡張機能設定に入ります。  
 右上のデベロッパーモードをONにします。  
 上で解凍したフォルダーを読み込みます。  
 "Wildcards for NovelAI Diffusion 4.0"がリストに現れる筈です。スイッチがONになっていることを確認してください。  
   
 That's it!  
-Now you can manage your wildcards txt files at extension menu, then use wildcards in NovelAI as a1111 webui.  
+Now you can manage your wildcards txt files by clicking the extension icon, then use wildcards in NovelAI as a1111 webui.  
 Just make sure you refresh novelai.net page before first using the extension, if novelai.net is already open.  
 
 これで準備OKです！  
