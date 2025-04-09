@@ -1,6 +1,6 @@
 ﻿# Wildcards for NovelAI Diffusion 4.0
 
-> **Turn `__hair__` into `||short bob\|long waves\|straight bangs||` automatically—before your prompt ever reaches NovelAI.**
+> **Turn `__wildcards__` into `||text|some more text|some more random text||` automatically—before your prompt ever reaches NovelAI.**
 
 A lightweight, privacy‑friendly Chrome extension that intercepts **`POST https://image.novelai.net/ai/generate-image`** and expands any `__wildcard__` tokens inside the request body using text files you upload.  
 Works like a1111 webui's wildcards extension, and the wildcards txt files for a1111 webui can be used, untouched.
@@ -20,3 +20,18 @@ Works like a1111 webui's wildcards extension, and the wildcards txt files for a1
 ## 🖼️ Screenshot
 ![ss](https://github.com/user-attachments/assets/3f67ae5c-43e3-48d0-b446-acb3781757c1)
 ![ss2](https://github.com/user-attachments/assets/763a5d89-c578-47aa-a617-be212cca022a)
+
+## How to install
+**1. Prepare the Files**  
+[Download the ZIP](https://github.com/david419kr/wildcards-for-novelai-diffusion/archive/refs/heads/main.zip) and extract the archive.  
+A folder named something like "wildcards-for-novelai-diffusion-main" will appear.  
+Tip: Make sure manifest.json is visible directly inside this folder—not nested in another sub‑folder.  
+
+**2. Chrome Settings** 
+In the address bar, type chrome://extensions and press Enter. 
+Toggle Developer mode (top‑right corner) to ON.  
+Load the unpacked extension above.  
+You should now see “Wildcards for NovelAI Diffusion 4.0” in the list, with a toggle switch on.  
+  
+That's it!  
+Now you can manage your wildcards txt files at extension menu, then use wildcards in NovelAI as a1111 webui.
