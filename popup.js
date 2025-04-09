@@ -3,19 +3,26 @@ const fileInput = document.getElementById('file');
 const list      = document.getElementById('list');
 
 fileInput.addEventListener('change', () => {
-  const file = fileInput.files[0];
-  if (!file) return;
-  const key  = file.name.replace(/\.[^.]+$/, '');
+  const files = Array.from(fileInput.files);
+  if (!files.length) return;
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    chrome.storage.local.get('wildcards', d => {
-      const map = d.wildcards || {};
-      map[key]  = reader.result;
-      chrome.storage.local.set({ wildcards: map }, refresh);
+  chrome.storage.local.get('wildcards', d => {
+    const map = d.wildcards || {};
+
+    let remaining = files.length;
+    files.forEach(f => {
+      const key = f.name.replace(/\.[^.]+$/, ''); // 확장자 제거
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        map[key] = reader.result;
+        if (--remaining === 0) {
+          chrome.storage.local.set({ wildcards: map }, refresh);
+        }
+      };
+      reader.readAsText(f);
     });
-  };
-  reader.readAsText(file);
+  });
   fileInput.value = '';
 });
 
