@@ -34,4 +34,5 @@ Load the unpacked extension above.
 You should now see “Wildcards for NovelAI Diffusion 4.0” in the list, with a toggle switch on.  
   
 That's it!  
-Now you can manage your wildcards txt files at extension menu, then use wildcards in NovelAI as a1111 webui.
+Now you can manage your wildcards txt files at extension menu, then use wildcards in NovelAI as a1111 webui.  
+Just make sure you refresh novelai.net page before first using the extension, if novelai.net is already open.  
