@@ -81,7 +81,6 @@
 
     /******* 3. Autocomplete ********/
   (function initWildcardAutocomplete_PM () {
-    /* ---------- 0. 스타일 ---------- */
     const STYLE = `
     .wildcard-suggest{
       position:absolute; z-index:2147483647; background:#222; color:#fff;
@@ -95,7 +94,6 @@
     styleEl.textContent = STYLE;
     document.head.appendChild(styleEl);
 
-    /* ---------- 1. 에디터 탐색 ---------- */
     const seen = new WeakSet();
     const mo   = new MutationObserver(scan);
     mo.observe(document, {childList:true, subtree:true});
@@ -106,7 +104,6 @@
         .forEach(el => { if (!seen.has(el)) hook(el); });
     }
 
-    /* ---------- 2. 에디터 훅 ---------- */
     function hook (editor) {
       seen.add(editor);
 
@@ -121,7 +118,6 @@
       editor.addEventListener('keydown', nav);
       editor.addEventListener('blur',   hide, true);   // capture
 
-      /* ── 2‑A. caret 앞 텍스트 ── */
       function textBeforeCaret () {
         const sel = window.getSelection();
         if (!sel || !sel.anchorNode || !editor.contains(sel.anchorNode)) return '';
@@ -131,22 +127,20 @@
         return rng.toString();
       }
 
-      /* ── 2‑B. 제안 목록 갱신 ── */
       function update () {
         const txt = textBeforeCaret();
 
-        /* ① 라인(토큰 내부) 자동완성?  __name__partial  패턴 */
         let m = txt.match(/__([A-Za-z0-9_-]+)__(?:([A-Za-z0-9 \-_]*))$/);
         if (m && dict[m[1]]) {
           const fileKey = m[1];
           const part    = (m[2] || '').toLowerCase();
 
           const lines = dict[fileKey]
-            .replace(/\\\(/g,'(').replace(/\\\)/g,')')        // \(, \) 정리
+            .replace(/\\\(/g,'(').replace(/\\\)/g,')')
             .split(/\r?\n/)
             .filter(Boolean)
             .filter(l => l.toLowerCase().startsWith(part))
-            .slice(0, 100);                                   // 과도한 리스트 방지
+            .slice(0, 100);
 
           if (lines.length) {
             render(lines.map(l => ({type:'value', text:l, key:fileKey})));
@@ -154,7 +148,6 @@
           }
         }
 
-        /* ② 토큰 이름 자동완성  __partial  패턴 */
         m = txt.match(/__([A-Za-z0-9_-]*)$/);
         if (m) {
           const prefix = m[1].toLowerCase();
@@ -170,18 +163,16 @@
         hide();
       }
 
-      /* ── 2‑C. 렌더링 & 위치 ── */
       function render (items) {
         list.innerHTML = '';
         items.forEach(({type,text}) => {
           const li = document.createElement('li');
           li.textContent = text;
-          li.dataset.type = type;          // token | value
+          li.dataset.type = type;
           list.appendChild(li);
         });
         selIdx = 0; highlight();
 
-        /* caret 좌표 */
         const sel = window.getSelection();
         const rng = sel.getRangeAt(0).cloneRange();
         const rect= rng.getBoundingClientRect();
@@ -190,7 +181,6 @@
         list.style.display= 'block';
       }
 
-      /* ── 2‑D. 키보드 네비 ── */
       function nav (e) {
         if (list.style.display === 'none') return;
 
@@ -201,55 +191,63 @@
           e.preventDefault(); selIdx = (selIdx + 1) % items.length; highlight();
         } else if (e.key === 'ArrowUp') {
           e.preventDefault(); selIdx = (selIdx - 1 + items.length) % items.length; highlight();
-        } else if (e.key === 'Enter' || e.key === 'Tab') {
+        } else if (e.key === 'Enter' || e.key === 'Tab' || e.key === ' ') {
           e.preventDefault(); choose(items[selIdx]);
         } else if (e.key === 'Escape') {
           hide();
         }
       }
 
-      /* ── 2‑E. 마우스 선택 ── */
       list.addEventListener('mousedown', e => {
         if (e.target.tagName === 'LI') {
           e.preventDefault(); choose(e.target);
         }
       });
 
-      /* ── 2‑F. 삽입 로직 ── */
       function choose (li) {
         const type = li.dataset.type;
         const text = li.textContent;
         const sel  = window.getSelection();
-        const rng  = sel.getRangeAt(0);
+        if (!sel || !sel.rangeCount) { hide(); return; }
+
+        const rng = sel.getRangeAt(0);
+
+        const before = rng.cloneRange();
+        before.setStart(editor, 0);
+        const full   = before.toString();
+
+        let len = 0;
+        if (type === 'token') {
+          const m = full.match(/__([A-Za-z0-9_-]*)$/);
+          len = m ? m[0].length : 0;
+        } else {                   
+          const m = full.match(/__([A-Za-z0-9_-]+)__(?:[A-Za-z0-9 \-_]*)$/);
+          len = m ? m[0].length : 0;    
+        }
+
+        if (len) {
+          sel.collapse(rng.endContainer, rng.endOffset);
+          for (let i = 0; i < len; i++) {
+            sel.modify('extend', 'backward', 'character');
+          }
+        }
+
+        document.execCommand('insertText', false, text);
+
+        hide();
 
         if (type === 'token') {
-          /* __partial → __key__ */
-          const before = rng.cloneRange();
-          before.setStart(editor, 0);
-          const len = before.toString().match(/__([A-Za-z0-9_-]*)$/)[0].length;
-          rng.setStart(rng.endContainer, rng.endOffset - len);
-          rng.deleteContents();
-          rng.insertNode(document.createTextNode(text));
-          sel.collapse(rng.endContainer, rng.endOffset - 0);
-        } else { /* value */
-          /* __name__partial → lineText */
-          const before = rng.cloneRange();
-          before.setStart(editor, 0);
-          const len = before.toString()
-                    .match(/__([A-Za-z0-9_-]+)__(?:[A-Za-z0-9 \-_]*)$/)[0].length;
-          rng.setStart(rng.endContainer, rng.endOffset - len);
-          rng.deleteContents();
-          rng.insertNode(document.createTextNode(text));
-          sel.collapse(rng.endContainer, rng.endOffset);
+          setTimeout(update, 0);
         }
-        hide();
       }
 
       function highlight () {
         list.querySelectorAll('li').forEach((li,i)=>
           li.classList.toggle('active', i===selIdx));
       }
-      function hide () { list.style.display='none'; selIdx=-1; }
+      function hide () { 
+        list.style.display='none'; selIdx=-1; 
+      }
     }
   })();
 
