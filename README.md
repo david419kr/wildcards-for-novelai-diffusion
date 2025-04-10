@@ -1,6 +1,7 @@
-﻿# Wildcards for NovelAI Diffusion 4.0
+﻿# Wildcards for NovelAI Diffusion
+ Now also compatible with legacy versions(v3, v2)
 
-> **Turn `__wildcards__` into `||text|some more text|some more random text||` automatically—before your prompt ever reaches NovelAI.**
+> **Turn `__wildcards__` into `||text|some more text|some more random text||` automatically.**
 
 A lightweight, privacy‑friendly Chrome extension that intercepts **`POST https://image.novelai.net/ai/generate-image`** and expands any `__wildcard__` tokens inside the request body using text files you upload.  
 Works like a1111 webui's wildcards extension, and the wildcards txt files for a1111 webui can be used, untouched.
