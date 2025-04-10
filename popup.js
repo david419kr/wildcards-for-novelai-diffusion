@@ -1,6 +1,7 @@
 // NovelAI Wildcards – popup.js
 const fileInput = document.getElementById('file');
 const list      = document.getElementById('list');
+const v3chk     = document.getElementById('v3mode');
 
 fileInput.addEventListener('change', () => {
   const files = Array.from(fileInput.files);
@@ -11,7 +12,7 @@ fileInput.addEventListener('change', () => {
 
     let remaining = files.length;
     files.forEach(f => {
-      const key = f.name.replace(/\.[^.]+$/, ''); // 확장자 제거
+      const key = f.name.replace(/\.[^.]+$/, '');
 
       const reader = new FileReader();
       reader.onload = () => {
@@ -44,5 +45,13 @@ function refresh() {
     });
   });
 }
+
+chrome.storage.local.get('v3mode', d => {
+  v3chk.checked = !!d.v3mode;
+});
+
+v3chk.addEventListener('change', () => {
+  chrome.storage.local.set({ v3mode: v3chk.checked });
+});
 
 document.addEventListener('DOMContentLoaded', refresh);

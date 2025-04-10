@@ -3,24 +3,31 @@
   const TARGET = 'https://image.novelai.net/ai/generate-image';
   const WILDCARD = /__([A-Za-z0-9_-]+)__/g;
   let dict = {};
+  let v3   = false; 
 
   window.addEventListener('message', e => {
     if (e.source !== window) return;
-    if (e.data?.type === '__WILDCARD_INIT__' || e.data?.type === '__WILDCARD_UPDATE__')
+    if (e.data?.type === '__WILDCARD_INIT__' || e.data?.type === '__WILDCARD_UPDATE__') {
       dict = e.data.map || {};
+      v3   = !!e.data.v3;
+    }
   });
 
   /******** 1. swap logic ********/
   const swap = txt => txt.replace(WILDCARD, (_, name) => {
     let raw = dict[name];
     if (!raw) return _;
-
-    raw = raw
-      .replace(/\\\(/g, '(')   // \(  → (
-      .replace(/\\\)/g, ')');  // \)  → )
   
-    const parts = raw.split(/\r?\n/).filter(Boolean);
-    return parts.length ? `||${parts.join('|')}||` : _;
+    raw = raw.replace(/\\\(/g,'(').replace(/\\\)/g,')');
+    const lines = raw.split(/\r?\n/).filter(Boolean);
+  
+    if (!lines.length) return _;
+  
+    if (v3) {
+      return lines[Math.floor(Math.random() * lines.length)];
+    } else {
+      return `||${lines.join('|')}||`;
+    }
   });
 
   const deepSwap = o => {
@@ -191,7 +198,7 @@
           e.preventDefault(); selIdx = (selIdx + 1) % items.length; highlight();
         } else if (e.key === 'ArrowUp') {
           e.preventDefault(); selIdx = (selIdx - 1 + items.length) % items.length; highlight();
-        } else if (e.key === 'Enter' || e.key === 'Tab' || e.key === ' ') {
+        } else if (e.key === 'Tab' || e.key === ' ') {
           e.preventDefault(); choose(items[selIdx]);
         } else if (e.key === 'Escape') {
           hide();
