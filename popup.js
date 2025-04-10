@@ -31,6 +31,23 @@ function refresh() {
   chrome.storage.local.get('wildcards', d => {
     const map = d.wildcards || {};
     list.innerHTML = '';
+
+    const delAll = document.createElement('button');
+    delAll.textContent = 'delete all';
+    delAll.style.float = 'right';
+    delAll.style.marginRight = '0px';
+    delAll.style.marginTop = '-25px';
+    delAll.onclick = () => {
+      if (!confirm('Are you sure you want to delete all wildcards?')) return;
+      chrome.storage.local.set({ wildcards: {} }, refresh);
+    };
+    if (Object.keys(map).length) {
+      delAll.style.display = 'block';
+    } else {
+      delAll.style.display = 'none';
+    }
+    list.appendChild(delAll);
+
     Object.keys(map).forEach(name => {
       const li = document.createElement('li');
       li.textContent = `${name}.txt`;
