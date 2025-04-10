@@ -86,6 +86,19 @@
     return $send.call(this, body);
   };
 
+  let autocompleteDict = [];
+  window.addEventListener('message', e => {
+    if (e.source !== window) return;
+    if (e.data?.type === '__WILDCARD_INIT__' || e.data?.type === '__WILDCARD_UPDATE__') {
+      dict = e.data.map || {};
+      v3   = !!e.data.v3;
+    }
+  
+    if (e.data?.type === '__AUTOCOMPLETE_DICT__') {
+      autocompleteDict = e.data.data || [];
+    }
+  });
+
     /******* 3. Autocomplete ********/
   (function initWildcardAutocomplete_PM () {
     const STYLE = `
@@ -134,6 +147,29 @@
         return rng.toString();
       }
 
+      const colorMap = {
+        "0": "lightblue",
+        "1": "indianred",
+        "3": "violet",
+        "4": "lightgreen",
+        "5": "orange",
+        "6": "red",
+        "7": "lightblue",
+        "8": "gold",
+        "9": "gold",
+        "10": "violet",
+        "11": "lightgreen",
+        "12": "tomato",
+        "14": "whitesmoke",
+        "15": "seagreen"
+      };
+
+      function formatCount(n) {
+        if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
+        if (n >= 1e3) return (n/1e3).toFixed(1)+'K';
+        return n+'';
+      }
+
       function update () {
         const txt = textBeforeCaret();
       
@@ -166,28 +202,87 @@
             return;
           }
         }
+
+        m = txt.match(/([A-Za-z0-9_-]{1,})$/);
+        if (m && autocompleteDict.length) {
+          const prefix = m[1].toLowerCase();
+          const entries = autocompleteDict
+            .filter(d => 
+              d.word.toLowerCase().includes(prefix) ||
+              d.aliases.some(a => a.toLowerCase().includes(prefix))
+            )
+            .map(d => {
+              const matchedAlias = d.aliases.find(a => a.toLowerCase().includes(prefix));
+              return {
+                word: d.word,
+                alias: matchedAlias,
+                colorCode: d.colorCode,
+                popCount: d.popCount
+              };
+            })
+            .sort((a,b) => b.popCount - a.popCount)
+            .slice(0, 50);
+
+          if (entries.length) {
+            render(entries.map(e => ({
+              type: 'dict',
+              original: e.alias || e.word,
+              text: e.word,
+              color: colorMap[e.colorCode] || 'red',
+              popCount: formatCount(e.popCount),
+              aliasUsed: !!e.alias && e.alias.toLowerCase().includes(prefix)
+            })));
+            return;
+          }
+        }
       
         hide();
       }
       
 
-      function render (items) {
+      function render(items) {
         list.innerHTML = '';
-        items.forEach(({type,text}) => {
+        items.forEach(({type, text, color, popCount, aliasUsed, original}, index) => {
           const li = document.createElement('li');
-          li.textContent = text;
           li.dataset.type = type;
+          li.dataset.index = index;
+      
+          if (type === 'dict') {
+            li.style.color = color || 'red';
+            if(aliasUsed) {
+              li.innerHTML = `<span style="color:${color};">${original} → ${text}</span> <span style="opacity:0.6;font-size:0.8em;">(${popCount})</span>`;
+            } else {
+              li.innerHTML = `<span style="color:${color};">${text}</span> <span style="opacity:0.6;font-size:0.8em;">(${popCount})</span>`;
+            }
+          } else {
+            li.textContent = text;
+          }
+      
+          li.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            choose(e.currentTarget);
+          });
+      
+          li.addEventListener('mouseenter', () => {
+            selIdx = index;
+            highlight();
+          });
+      
           list.appendChild(li);
         });
-        selIdx = 0; highlight();
-
+      
+        selIdx = 0;
+        highlight();
+      
         const sel = window.getSelection();
         const rng = sel.getRangeAt(0).cloneRange();
         const rect= rng.getBoundingClientRect();
-        list.style.left   = (rect.left + window.scrollX) + 'px';
-        list.style.top    = (rect.bottom + window.scrollY + 2) + 'px';
+        list.style.left   = (rect.left + window.scrollX)+'px';
+        list.style.top    = (rect.bottom + window.scrollY+2)+'px';
         list.style.display= 'block';
       }
+      
+      
 
       function nav (e) {
         if (list.style.display === 'none') return;
@@ -199,7 +294,7 @@
           e.preventDefault(); selIdx = (selIdx + 1) % items.length; highlight();
         } else if (e.key === 'ArrowUp') {
           e.preventDefault(); selIdx = (selIdx - 1 + items.length) % items.length; highlight();
-        } else if (e.key === 'Tab' || e.key === ' ') {
+        } else if (e.key === 'Tab') {
           e.preventDefault(); choose(items[selIdx]);
         } else if (e.key === 'Escape') {
           hide();
@@ -214,40 +309,51 @@
 
       function choose (li) {
         const type = li.dataset.type;
-        const text = li.textContent;
+        let text = li.textContent;
         const sel  = window.getSelection();
         if (!sel || !sel.rangeCount) { hide(); return; }
-
+      
         const rng = sel.getRangeAt(0);
-
+      
         const before = rng.cloneRange();
         before.setStart(editor, 0);
-        const full   = before.toString();
-
+        const full = before.toString();
+      
         let len = 0;
         if (type === 'token') {
           const m = full.match(/__([A-Za-z0-9_-]*)$/);
           len = m ? m[0].length : 0;
-        } else {                   
+        } else if (type === 'value') {
           const m = full.match(/__([A-Za-z0-9_-]+)__(?:[A-Za-z0-9 \-_]*)$/);
-          len = m ? m[0].length : 0;    
+          len = m ? m[0].length : 0;
+        } else if (type === 'dict') {
+          const m = full.match(/[A-Za-z0-9_-]{1,}$/);
+          len = m ? m[0].length : 0;
+      
+          text = text.replace(/\s\([0-9.]+[MK]?\)$/,'').replace(/_/g,' ');
+      
+          // alias 표시가 있는 경우 "→" 앞부분을 제거하여 원본 단어만 남김
+          if (text.includes('→')) {
+            text = text.split('→')[1].trim();
+          }
         }
-
+      
         if (len) {
           sel.collapse(rng.endContainer, rng.endOffset);
           for (let i = 0; i < len; i++) {
             sel.modify('extend', 'backward', 'character');
           }
         }
-
+      
         document.execCommand('insertText', false, text);
-
         hide();
-
+      
         if (type === 'token') {
           setTimeout(update, 0);
         }
       }
+      
+      
 
       function highlight () {
         list.querySelectorAll('li').forEach((li,i)=>

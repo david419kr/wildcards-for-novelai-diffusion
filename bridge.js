@@ -19,4 +19,24 @@
                            map: (ch.wildcards ? ch.wildcards.newValue : wildcards) || {},
                            v3 : (ch.v3mode   ? ch.v3mode.newValue   : v3mode   ) || false }, '*');
   });
+
+  const csvUrl = chrome.runtime.getURL('dictionary.csv');
+  const res = await fetch(csvUrl);
+  const text = await res.text();
+
+  const autocompleteDict = text.split(/\r?\n/)
+    .filter(Boolean)
+    .map(line => {
+      const [word, colorCode, popCount, ...rest] = line.split(',');
+      const aliases = rest.join(','); 
+      return {
+        word,
+        colorCode: colorCode.trim(),
+        popCount: parseInt(popCount),
+        aliases: aliases.replace(/"/g,'').split(',').map(a => a.trim())
+      };
+    });
+
+  window.postMessage({ type: '__AUTOCOMPLETE_DICT__', data: autocompleteDict }, '*');
+
 })();
