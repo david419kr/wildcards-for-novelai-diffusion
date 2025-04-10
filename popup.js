@@ -35,7 +35,7 @@ function refresh() {
       const li = document.createElement('li');
       li.textContent = `${name}.txt`;
       const del = document.createElement('button');
-      del.textContent = '삭제';
+      del.textContent = 'delete';
       del.onclick = () => {
         delete map[name];
         chrome.storage.local.set({ wildcards: map }, refresh);
