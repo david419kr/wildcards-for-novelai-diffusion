@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Wildcards for NovelAI Diffusion 4.0",
+  "name": "Wildcards for NovelAI Diffusion",
   "description": "swap __wildcards__ prompts to .txt file content",
-  "version": "2.1.0",
+  "version": "2.1.5d",
   "permissions": ["storage", "scripting", "activeTab"],
   "host_permissions": ["https://image.novelai.net/*"],
   "content_scripts": [
