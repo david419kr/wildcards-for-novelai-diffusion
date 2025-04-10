@@ -2,6 +2,17 @@
 (() => {
   const TARGET = 'https://image.novelai.net/ai/generate-image';
   const WILDCARD = /__([A-Za-z0-9_-]+)__/g;
+
+  const curlyPattern = /{(?:[^|{}]+\|)+[^|{}]+}/;
+  const doublePipePattern = /\|\|(?:[^|]+\|)+[^|]+\|\|/;
+  const simpleWildcardPattern = /__([A-Za-z0-9_-]+)__/;
+
+  function containsWildcardSyntax(text) {
+    return simpleWildcardPattern.test(text) ||
+           curlyPattern.test(text) ||
+           doublePipePattern.test(text);
+  }
+
   let dict = {};
   let v3   = false; 
 
@@ -14,24 +25,61 @@
   });
 
   /******** 1. swap logic ********/
-  const swap = txt => txt.replace(WILDCARD, (_, name) => {
-    let raw = dict[name];
-    if (!raw) return _;
-  
-    raw = raw.replace(/\\\(/g,'(').replace(/\\\)/g,')');
-    const lines = raw.split(/\r?\n/).filter(Boolean);
-  
-    if (!lines.length) return _;
-  
-    if (v3) {
-      return lines[Math.floor(Math.random() * lines.length)];
-    } else {
-      return `||${lines.join('|')}||`;
+  function swap(txt) {
+    // 1. __ 토큰 처리
+    let result = txt.replace(/__([A-Za-z0-9_-]+)__/g, (match, name) => {
+      let raw = dict[name];
+      if (!raw) return match;
+    
+      // 이스케이프 문자 복원
+      raw = raw.replace(/\\\(/g, '(').replace(/\\\)/g, ')');
+      const lines = raw.split(/\r?\n/).filter(Boolean);
+      if (!lines.length) return match;
+    
+      // 파일의 각 줄 중 하나라도 다른 wildcard 문법이 남아 있으면 강제로 V3 모드 적용
+      const forceV3 = lines.some(line => containsWildcardSyntax(line));
+      const effectiveV3 = forceV3 || v3;
+    
+      if (effectiveV3) {
+        // 랜덤으로 한 줄 선택 (한 번만 치환)
+        return lines[Math.floor(Math.random() * lines.length)];
+      } else {
+        // V3 모드가 아니라면 전체 라인을 파이프(|)로 연결한 후 ||...|| 형태로 반환
+        return `||${lines.join('|')}||`;
+      }
+    });
+    
+    // 2. {text1|text2|text3} 문법 처리
+    result = result.replace(/{([^|{}]+(?:\|[^|{}]+)+)}/g, (match, group) => {
+      const opts = group.split('|');
+      return opts[Math.floor(Math.random() * opts.length)];
+    });
+    
+    // 3. ||text1|text2|text3|| 문법 처리
+    result = result.replace(/\|\|((?:[^|]+\|)+[^|]+)\|\|/g, (match, group) => {
+      const opts = group.split('|');
+      return opts[Math.floor(Math.random() * opts.length)];
+    });
+    
+    return result;
+  }
+
+  function recursiveSwap(txt) {
+    let current = txt;
+    let iteration = 0;
+    // 최대 100회 반복하여 무한 루프 방지
+    while (containsWildcardSyntax(current) && iteration < 100) {
+      const next = swap(current);
+      // 더 이상 변화가 없으면 중단
+      if (next === current) break;
+      current = next;
+      iteration++;
     }
-  });
+    return current;
+  }
 
   const deepSwap = o => {
-    if (typeof o === 'string') return swap(o);
+    if (typeof o === 'string') return recursiveSwap(o);
     if (Array.isArray(o))      return o.map(deepSwap);
     if (o && typeof o === 'object') {
       for (const k in o) {
@@ -39,6 +87,7 @@
         if (k === 'char_captions' && Array.isArray(o[k]) && o[k].length > 6)
           o[k] = o[k].slice(0, 6);
       }
+      return o;
     }
     return o;
   };
@@ -53,9 +102,14 @@
         let body = init.body || (input instanceof Request ? input.body : null);
         if (body) {
           const txt  = typeof body === 'string' ? body : await new Response(body).text();
-          const json = JSON.parse(txt);
-          const newB = JSON.stringify(deepSwap(json));
-
+          let json = JSON.parse(txt);
+          // 기존 deepSwap로 wildcards 치환 적용
+          json = deepSwap(json);
+          // cosmetic 처리: base_caption이 존재하면 input과 같게 고정
+          if (json?.parameters?.v4_prompt?.caption && typeof json.parameters.v4_prompt.caption.base_caption !== 'undefined' && typeof json.input === 'string') {
+            json.parameters.v4_prompt.caption.base_caption = json.input;
+          }
+          const newB = JSON.stringify(json);
           if (typeof input === 'string') {
             init = { ...init, body: newB };
           } else {
@@ -79,7 +133,14 @@
   XMLHttpRequest.prototype.send = function (body) {
     try {
       if (this.__wild_m?.toUpperCase() === 'POST' && this.__wild_u?.startsWith(TARGET) && typeof body === 'string') {
-        const newBody = JSON.stringify(deepSwap(JSON.parse(body)));
+        let json = JSON.parse(body);
+        // 기존 deepSwap 치환 적용
+        json = deepSwap(json);
+        // cosmetic 처리: base_caption이 존재하면 input과 같게 고정
+        if (json?.parameters?.v4_prompt?.caption && typeof json.parameters.v4_prompt.caption.base_caption !== 'undefined' && typeof json.input === 'string') {
+          json.parameters.v4_prompt.caption.base_caption = json.input;
+        }
+        const newBody = JSON.stringify(json);
         return $send.call(this, newBody);
       }
     } catch (e) { console.error('[Wildcard] XHR patch error:', e); }

@@ -1,7 +1,7 @@
 // NovelAI Wildcards – popup.js
 const fileInput = document.getElementById('file');
 const list      = document.getElementById('list');
-const v3chk     = document.getElementById('v3mode');
+const v3chk     = true; // document.getElementById('v3mode');
 
 fileInput.addEventListener('change', () => {
   const files = Array.from(fileInput.files);
@@ -63,12 +63,12 @@ function refresh() {
   });
 }
 
-chrome.storage.local.get('v3mode', d => {
-  v3chk.checked = !!d.v3mode;
-});
+// chrome.storage.local.get('v3mode', d => {
+//   v3chk.checked = !!d.v3mode;
+// });
 
-v3chk.addEventListener('change', () => {
-  chrome.storage.local.set({ v3mode: v3chk.checked });
-});
+// v3chk.addEventListener('change', () => {
+//   chrome.storage.local.set({ v3mode: v3chk.checked });
+// });
 
 document.addEventListener('DOMContentLoaded', refresh);
