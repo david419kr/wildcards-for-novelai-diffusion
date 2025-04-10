@@ -136,39 +136,40 @@
 
       function update () {
         const txt = textBeforeCaret();
-
+      
         let m = txt.match(/__([A-Za-z0-9_-]+)__(?:([A-Za-z0-9 \-_]*))$/);
         if (m && dict[m[1]]) {
           const fileKey = m[1];
           const part    = (m[2] || '').toLowerCase();
-
+      
           const lines = dict[fileKey]
-            .replace(/\\\(/g,'(').replace(/\\\)/g,')')
+            .replace(/\\\(/g,'(').replace(/\\\)/g,')') 
             .split(/\r?\n/)
             .filter(Boolean)
-            .filter(l => l.toLowerCase().startsWith(part))
+            .filter(l => l.toLowerCase().includes(part))
             .slice(0, 100);
-
+      
           if (lines.length) {
             render(lines.map(l => ({type:'value', text:l, key:fileKey})));
             return;
           }
         }
-
+      
         m = txt.match(/__([A-Za-z0-9_-]*)$/);
         if (m) {
           const prefix = m[1].toLowerCase();
           const keys   = Object.keys(dict)
-                        .filter(k => k.toLowerCase().startsWith(prefix))
+                        .filter(k => k.toLowerCase().includes(prefix)) 
                         .sort();
           if (keys.length) {
             render(keys.map(k => ({type:'token', text:`__${k}__`})));
             return;
           }
         }
-
+      
         hide();
       }
+      
 
       function render (items) {
         list.innerHTML = '';
