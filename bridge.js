@@ -27,8 +27,24 @@
   const autocompleteDict = text.split(/\r?\n/)
     .filter(Boolean)
     .map(line => {
-      const [word, colorCode, popCount, ...rest] = line.split(',');
-      const aliases = rest.join(','); 
+      const regex = /"([^"]*(?:""[^"]*)*)"|([^,]+)/g;
+      const row = [];
+      let match;
+
+      // 정규표현식을 순회하며 매치된 그룹을 배열에 저장
+      while ((match = regex.exec(line))) {
+        if (match[1] !== undefined) {
+          // 큰따옴표 내부 내용: 내부의 이스케이프된 큰따옴표 처리 (예: "" -> ")
+          row.push(match[1].replace(/""/g, '"'));
+        } else if (match[2] !== undefined) {
+          // 큰따옴표에 묶이지 않은 필드
+          row.push(match[2]);
+        }
+      }
+
+      let [word, colorCode, popCount, aliases] = row;
+      if (aliases) aliases = `"${aliases}"`;
+      else aliases = '""';
       return {
         word,
         colorCode: colorCode.trim(),
