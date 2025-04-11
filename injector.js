@@ -406,7 +406,7 @@
           }
         }
       
-        document.execCommand('insertText', false, text);
+        document.execCommand('insertText', false, text + ', ');
         hide();
       
         if (type === 'token') {
