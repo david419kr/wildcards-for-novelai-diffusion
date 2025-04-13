@@ -319,11 +319,6 @@
             li.textContent = text;
           }
       
-          li.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            choose(e.currentTarget);
-          });
-      
           li.addEventListener('mouseenter', () => {
             selIdx = index;
             highlight();
