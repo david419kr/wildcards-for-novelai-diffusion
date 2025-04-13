@@ -319,6 +319,11 @@
             li.textContent = text;
           }
       
+          li.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            choose(e.currentTarget);
+          });
+      
           li.addEventListener('mouseenter', () => {
             selIdx = index;
             highlight();
@@ -356,12 +361,6 @@
           hide();
         }
       }
-
-      list.addEventListener('mousedown', e => {
-        if (e.target.tagName === 'LI') {
-          e.preventDefault(); choose(e.target);
-        }
-      });
 
       function choose (li) {
         const type = li.dataset.type;
