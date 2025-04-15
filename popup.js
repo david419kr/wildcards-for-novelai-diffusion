@@ -63,12 +63,17 @@ function refresh() {
   });
 }
 
-// chrome.storage.local.get('v3mode', d => {
-//   v3chk.checked = !!d.v3mode;
-// });
+// 0. 새 체크박스 핸들러 ───────────────────────────
+const preserveChk = document.getElementById('preservePrompt');
 
-// v3chk.addEventListener('change', () => {
-//   chrome.storage.local.set({ v3mode: v3chk.checked });
-// });
+// 저장값 → 체크박스 반영
+chrome.storage.local.get('preservePrompt', d => {
+  preserveChk.checked = !!d.preservePrompt;
+});
+
+// 체크 변경 → 저장
+preserveChk.addEventListener('change', () => {
+  chrome.storage.local.set({ preservePrompt: preserveChk.checked });
+});
 
 document.addEventListener('DOMContentLoaded', refresh);
