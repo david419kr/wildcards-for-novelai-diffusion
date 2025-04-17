@@ -1,33 +1,19 @@
 <!doctype html>
 <html>
-
 <head>
-  <meta charset="utf-8">
-  <title>Wildcards txt files</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      width: 320px;
-      padding: 12px;
-    }
-
-    ul {
-      padding: 0;
-      list-style: none;
-    }
-
-    li {
-      display: flex;
-      justify-content: space-between;
-      margin: 4px 0;
-    }
-
-    button {
-      margin-left: 8px;
-    }
-  </style>
+<meta charset="utf-8">
+<title>Wildcards txt files</title>
+<style>
+  body { font-family: sans-serif; width: 320px; padding: 12px; }
+  ul { padding: 0; list-style: none; }
+  li { margin: 4px 0; }
+  .folder-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-weight: bold; }
+  .file-item { display: flex; align-items: center; justify-content: space-between; }
+  button { margin-left: 8px; }
+  select { margin-left: 8px; }
+  .folder-list { padding-left: 12px; display: none; }
+</style>
 </head>
-
 <body>
   <h2>Settings</h2>
   <label style="font-size:0.85rem;">
@@ -38,7 +24,7 @@
   <label style="font-size:0.85rem;">
     <input type="checkbox" id="alternativeDanbooruAutocomplete">
     <b>Full Alternative Danbooru Autocomplete</b>
-    <br>　・a1111 WebUI style Danbooru Autocomplete.<br>　・Use with "Disable Tag Suggestions" ON.
+  <br>　・a1111 WebUI style Danbooru Autocomplete.<br>　・Use with "Disable Tag Suggestions" ON.
   </label><br><br>
   <b style="font-size:0.9rem;">Autocomplete Trigger Keys</b><br>
   <label style="font-size:0.85rem;">
@@ -50,9 +36,12 @@
     <b>Tab</b>: Use with "Disable Tag Suggestions" ON.
   </label><br>
   <h2>Wildcards</h2>
+  <div id="folder-create">
+    <input type="text" id="newFolderName" placeholder="New folder name">
+    <button id="createFolderBtn">Create Folder</button>
+  </div>
   <input type="file" id="file" accept=".txt" multiple><br><br>
   <ul id="list"></ul>
   <script src="popup.js"></script>
 </body>
-
 </html>

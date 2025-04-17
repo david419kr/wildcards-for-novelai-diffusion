@@ -4,7 +4,7 @@
 
   const curlyPattern = /{(?:[^|{}]+\|)+[^|{}]+}/;
   const doublePipePattern = /\|\|(?:[^|]+\|)+[^|]+\|\|/;
-  const simpleWildcardPattern = /__([A-Za-z0-9_-]+)__/;
+  const simpleWildcardPattern = /__([A-Za-z0-9_\/-]+)__/;
 
   function containsWildcardSyntax(text) {
     return simpleWildcardPattern.test(text) ||
@@ -147,8 +147,18 @@
   /******** 1. swap logic ********/
   function swap(txt) {
     // 1. __ 토큰 처리
-    let result = txt.replace(/__([A-Za-z0-9_-]+)__/g, (match, name) => {
+    let result = txt.replace(/__([A-Za-z0-9_\/-]+)__/g, (match, name) => {
+      // 1-1. 정확히 매칭되는 키가 있는지
       let raw = dict[name];
+  
+      // 1-2. 없으면, name에 슬래시가 없을 때 폴더 구조 중에서 파일명만 같은 키를 찾아서 대체
+      if (!raw && !name.includes('/')) {
+        const fallbackKey = Object.keys(dict)
+          .find(k => k.split('/').pop() === name);
+        if (fallbackKey) raw = dict[fallbackKey];
+      }
+  
+      // 1-3. 여전히 raw가 없으면 치환 안 함
       if (!raw) return match;
 
       // 이스케이프 문자 복원
@@ -412,11 +422,19 @@
           }
         }
 
-        m = txt.match(/__([A-Za-z0-9_-]*)$/);
+        m = txt.match(/__([A-Za-z0-9_\/-]*)$/);
         if (m) {
           const prefix = m[1].toLowerCase();
-          const keys = Object.keys(dict)
-            .filter(k => k.toLowerCase().includes(prefix))
+          const allKeys = Object.keys(dict)
+
+          // 1) 폴더명을 단독으로 입력한 경우: 해당 폴더 안의 모든 key 제안
+          const folderKeys = allKeys.filter(k => k.toLowerCase().startsWith(prefix + '/'));
+          if (folderKeys.length && !prefix.includes('/')) {
+            render(folderKeys.map(k => ({ type: 'token', text: `__${k}__` })));
+            return;
+          }
+          
+          const keys = allKeys.filter(k => k.toLowerCase().includes(prefix))
             .sort();
           if (keys.length) {
             render(keys.map(k => ({ type: 'token', text: `__${k}__` })));
