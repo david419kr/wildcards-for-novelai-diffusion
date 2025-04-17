@@ -31,24 +31,22 @@
     }
 
     .folder-header.active {
-    box-shadow: 0 0 8px 3px rgba(0, 172, 193, 0.8);
-    animation: pulse-folder 1s infinite alternate;
-  }
-
-  @keyframes pulse-folder {
-    from { box-shadow: 0 0 8px 3px rgba(0, 172, 193, 0.8); }
-    to   { box-shadow: 0 0 16px 6px rgba(0, 172, 193, 0.8); }
-  }
-
-    .file-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;     /* 줄 바꿈 허용 */
-    word-break: break-all;
+      box-shadow: 0 0 8px 3px rgba(255, 152, 0, 0.8);
+      animation: pulse 1s infinite alternate;
     }
 
-    .file-item.selected { background: #d0eaff; }
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      /* 줄 바꿈 허용 */
+      word-break: break-all;
+    }
+
+    .file-item.selected {
+      background: #d0eaff;
+    }
 
     button {
       margin-left: 8px;
@@ -64,28 +62,35 @@
     }
 
     .folder-header.drop-target {
-    background-color: #e0f7fa;  /* 연한 청록색 배경 */
-    border: 2px dashed #00acc1;
-  }
+      background-color: #e0f7fa;
+      /* 연한 청록색 배경 */
+      border: 2px dashed #00acc1;
+    }
 
-  #backBtn {
-    transition: box-shadow 0.2s ease-in-out;
-  }
+    #backBtn {
+      transition: box-shadow 0.2s ease-in-out;
+    }
 
-  #backBtn.active {
-    box-shadow: 0 0 8px 3px rgba(255, 152, 0, 0.8);
-    animation: pulse 1s infinite alternate;
-  }
+    #backBtn.active {
+      box-shadow: 0 0 8px 3px rgba(255, 152, 0, 0.8);
+      animation: pulse 1s infinite alternate;
+    }
 
-  #backBtn.drop-target {
-    background-color: #fff3e0;  /* 연한 오렌지 배경 */
-    border: 2px dashed #fb8c00;
-  }
+    #backBtn.drop-target {
+      background-color: #fff3e0;
+      /* 연한 오렌지 배경 */
+      border: 2px dashed #fb8c00;
+    }
 
-  @keyframes pulse {
-    from { box-shadow: 0 0 8px 3px rgba(255, 152, 0, 0.8); }
-    to   { box-shadow: 0 0 16px 6px rgba(255, 152, 0, 0.8); }
-  }
+    @keyframes pulse {
+      from {
+        box-shadow: 0 0 8px 3px rgba(255, 152, 0, 0.8);
+      }
+
+      to {
+        box-shadow: 0 0 16px 6px rgba(255, 152, 0, 0.8);
+      }
+    }
   </style>
 </head>
 

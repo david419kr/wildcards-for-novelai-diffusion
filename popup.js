@@ -1,23 +1,24 @@
 // NovelAI Wildcards – popup.js
 let currentFolder = null;
 
-const list            = document.getElementById('list');
-const folderInput     = document.getElementById('newFolderName');
+const list = document.getElementById('list');
+const folderInput = document.getElementById('newFolderName');
 const createFolderBtn = document.getElementById('createFolderBtn');
-const backBtn         = document.getElementById('backBtn');
-const viewTitle       = document.getElementById('viewTitle');
-const fileRoot        = document.getElementById('fileRoot');
-const fileInFolder    = document.getElementById('fileInFolder');
-const rootContent     = document.getElementById('rootContent');
+const backBtn = document.getElementById('backBtn');
+const viewTitle = document.getElementById('viewTitle');
+const fileRoot = document.getElementById('fileRoot');
+const fileInFolder = document.getElementById('fileInFolder');
+const rootContent = document.getElementById('rootContent');
 let isDragging = false;
+let lastSelectedIndex = null;
 
 // Create new folder
 document.getElementById('createFolderBtn').addEventListener('click', () => {
   let raw = folderInput.value.trim();
   let name = raw.replace(/\s+/g, '_').replace(/_+/g, '_');
   if (!name) return alert('Input folder name.');
-  chrome.storage.local.get(['wildcards','wildcardFolders'], d => {
-    const map     = d.wildcards || {};
+  chrome.storage.local.get(['wildcards', 'wildcardFolders'], d => {
+    const map = d.wildcards || {};
     const folders = d.wildcardFolders || [];
     if (folders.includes(name) || map[name]) {
       return alert('Folder already exists: ' + name);
@@ -94,7 +95,7 @@ backBtn.addEventListener('drop', e => {
 fileRoot.addEventListener('change', e => {
   const files = Array.from(e.target.files);
   if (!files.length) return;
-  chrome.storage.local.get(['wildcards','wildcardFolders'], d => {
+  chrome.storage.local.get(['wildcards', 'wildcardFolders'], d => {
     const map = d.wildcards || {};
     let remaining = files.length;
     files.forEach(f => {
@@ -127,7 +128,7 @@ fileInFolder.addEventListener('change', e => {
     files.forEach(f => {
       const rawBase = f.name.replace(/\.txt$/i, '');
       const sanBase = rawBase.replace(/\s+/g, '_').replace(/_+/g, '_');
-      const key     = `${currentFolder}/${sanBase}`;
+      const key = `${currentFolder}/${sanBase}`;
       if (map[key]) {
         alert(`File already exists: ${key}`);
         if (--remaining === 0) chrome.storage.local.set({ wildcards: map }, refresh);
@@ -146,23 +147,23 @@ fileInFolder.addEventListener('change', e => {
 
 // Render list function
 function refresh() {
-  chrome.storage.local.get(['wildcards','wildcardFolders'], d => {
-    const map     = d.wildcards || {};
+  chrome.storage.local.get(['wildcards', 'wildcardFolders'], d => {
+    const map = d.wildcards || {};
     const folders = d.wildcardFolders || [];
     list.innerHTML = '';
 
     // Toggle root vs folder view
     if (currentFolder) {
-      backBtn.style.display      = 'inline-block';
-      viewTitle.textContent      = `Folder: ${currentFolder}`;
-      rootContent.style.display  = 'none';
-      fileRoot.style.display     = 'none';
+      backBtn.style.display = 'inline-block';
+      viewTitle.textContent = `Folder: ${currentFolder}`;
+      rootContent.style.display = 'none';
+      fileRoot.style.display = 'none';
       fileInFolder.style.display = 'inline-block';
     } else {
-      backBtn.style.display      = 'none';
-      viewTitle.textContent      = 'Settings';
-      rootContent.style.display  = 'block';
-      fileRoot.style.display     = 'inline-block';
+      backBtn.style.display = 'none';
+      viewTitle.textContent = 'Settings';
+      rootContent.style.display = 'block';
+      fileRoot.style.display = 'inline-block';
       fileInFolder.style.display = 'none';
     }
 
@@ -184,8 +185,8 @@ function refresh() {
         if (!sanitized || sanitized === currentFolder) {
           return alert('Invalid folder name.');
         }
-        chrome.storage.local.get(['wildcards','wildcardFolders'], data => {
-          const map     = data.wildcards || {};
+        chrome.storage.local.get(['wildcards', 'wildcardFolders'], data => {
+          const map = data.wildcards || {};
           const folders = data.wildcardFolders || [];
           // 새 이름이 이미 존재하는지 검사
           if (folders.includes(sanitized) || Object.keys(map).some(k => k === sanitized || k.startsWith(sanitized + '/'))) {
@@ -198,14 +199,14 @@ function refresh() {
           Object.keys(map).forEach(key => {
             if (key.startsWith(currentFolder + '/')) {
               const rest = key.slice(currentFolder.length + 1);
-              newMap[ sanitized + '/' + rest ] = map[key];
+              newMap[sanitized + '/' + rest] = map[key];
             } else {
               newMap[key] = map[key];
             }
           });
           // 저장 후, currentFolder 갱신 및 화면 새로고침
           chrome.storage.local.set({
-            wildcards:      newMap,
+            wildcards: newMap,
             wildcardFolders: newFolders
           }, () => {
             currentFolder = sanitized;
@@ -256,7 +257,7 @@ function refresh() {
         hdr.addEventListener('drop', e => {
           e.preventDefault();
           const keys = JSON.parse(e.dataTransfer.getData('application/json'));
-          chrome.storage.local.get(['wildcards','wildcardFolders'], data => {
+          chrome.storage.local.get(['wildcards', 'wildcardFolders'], data => {
             const map = data.wildcards || {};
             keys.forEach(oldKey => {
               const base = oldKey.includes('/') ? oldKey.split('/').pop() : oldKey;
@@ -307,14 +308,27 @@ function refresh() {
 
         // 클릭으로 선택 토글 (Ctrl/Cmd + 클릭으로 멀티셀렉트)
         li.addEventListener('click', e => {
-          if (e.ctrlKey || e.metaKey) {
+          // 현재 리스트의 모든 파일 아이템
+          const items = Array.from(document.querySelectorAll('li.file-item'));
+          const thisIndex = items.indexOf(li);
+
+          if (e.shiftKey && lastSelectedIndex !== null) {
+            // Shift+Click: 마지막 선택 지점↔현재 지점 사이 모두 선택
+            const [start, end] = [lastSelectedIndex, thisIndex].sort((a, b) => a - b);
+            items.slice(start, end + 1).forEach(el => el.classList.add('selected'));
+          }
+          else if (e.ctrlKey || e.metaKey) {
+            // Ctrl/Cmd+Click: 토글
             li.classList.toggle('selected');
-          } else {
-            // 단일 선택 모드
-            document.querySelectorAll('.file-item.selected')
-              .forEach(el => el.classList.remove('selected'));
+          }
+          else {
+            // 일반 클릭: 다른 건 해제 후 현재만 선택
+            items.forEach(el => el.classList.remove('selected'));
             li.classList.add('selected');
           }
+
+          // 클릭 후에는 인덱스 기억
+          lastSelectedIndex = thisIndex;
         });
 
         // dragstart 시 선택된 항목들의 key 리스트 전송
@@ -347,14 +361,27 @@ function refresh() {
 
         // 클릭으로 선택 토글 (Ctrl/Cmd + 클릭으로 멀티셀렉트)
         li.addEventListener('click', e => {
-          if (e.ctrlKey || e.metaKey) {
+          // 현재 리스트의 모든 파일 아이템
+          const items = Array.from(document.querySelectorAll('li.file-item'));
+          const thisIndex = items.indexOf(li);
+
+          if (e.shiftKey && lastSelectedIndex !== null) {
+            // Shift+Click: 마지막 선택 지점↔현재 지점 사이 모두 선택
+            const [start, end] = [lastSelectedIndex, thisIndex].sort((a, b) => a - b);
+            items.slice(start, end + 1).forEach(el => el.classList.add('selected'));
+          }
+          else if (e.ctrlKey || e.metaKey) {
+            // Ctrl/Cmd+Click: 토글
             li.classList.toggle('selected');
-          } else {
-            // 단일 선택 모드
-            document.querySelectorAll('.file-item.selected')
-              .forEach(el => el.classList.remove('selected'));
+          }
+          else {
+            // 일반 클릭: 다른 건 해제 후 현재만 선택
+            items.forEach(el => el.classList.remove('selected'));
             li.classList.add('selected');
           }
+
+          // 클릭 후에는 인덱스 기억
+          lastSelectedIndex = thisIndex;
         });
 
         // dragstart 시 선택된 항목들의 key 리스트 전송
@@ -426,10 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('dragend', () => { isDragging = false; });
   document.addEventListener('drop', () => { isDragging = false; });
 
-  // 2) 휠 스크롤: 기본 동작 그대로 두어서 드래그 중에도 스크롤이 먹히도록
-  //    (아예 리스너를 두지 않거나, passive 옵션으로 preventDefault 제거)
-
-  // 3) 자동 상하 스크롤
+  // 2) 자동 상하 스크롤
   document.addEventListener('dragover', e => {
     if (!isDragging) return;
     const TOP_ZONE = 40;                   // 상단에서 40px 이내
