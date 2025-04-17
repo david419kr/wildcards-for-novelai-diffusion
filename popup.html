@@ -1,46 +1,58 @@
 <!doctype html>
 <html>
 <head>
-<meta charset="utf-8">
-<title>Wildcards txt files</title>
-<style>
-  body { font-family: sans-serif; width: 320px; padding: 12px; }
-  ul { padding: 0; list-style: none; }
-  li { margin: 4px 0; }
-  .folder-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-weight: bold; }
-  .file-item { display: flex; align-items: center; justify-content: space-between; }
-  button { margin-left: 8px; }
-  select { margin-left: 8px; }
-  .folder-list { padding-left: 12px; display: none; }
-</style>
+  <meta charset="utf-8">
+  <title>Wildcards txt files</title>
+  <style>
+    body { font-family: sans-serif; width: 320px; padding: 12px; }
+    ul { padding: 0; list-style: none; }
+    li { margin: 4px 0; }
+    .folder-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-weight: bold; color: blue; }
+    .file-item { display: flex; align-items: center; justify-content: space-between; }
+    button { margin-left: 8px; }
+    select { margin-left: 8px; }
+    .folder-list { padding-left: 12px; display: none; }
+  </style>
 </head>
 <body>
-  <h2>Settings</h2>
-  <label style="font-size:0.85rem;">
-    <input type="checkbox" id="preservePrompt" checked>
-    <b>Preserve Original img prompts on Enhance</b><br>
-    　・Uncheck this to randomize enhance prompts.
-  </label><br>
-  <label style="font-size:0.85rem;">
-    <input type="checkbox" id="alternativeDanbooruAutocomplete">
-    <b>Full Alternative Danbooru Autocomplete</b>
-  <br>　・a1111 WebUI style Danbooru Autocomplete.<br>　・Use with "Disable Tag Suggestions" ON.
-  </label><br><br>
-  <b style="font-size:0.9rem;">Autocomplete Trigger Keys</b><br>
-  <label style="font-size:0.85rem;">
-    <input type="checkbox" id="triggerSpace" checked>
-    <b>Space</b>: Not interfering with NAI default.
-  </label><br>
-  <label style="font-size:0.85rem;">
-    <input type="checkbox" id="triggerTab">
-    <b>Tab</b>: Use with "Disable Tag Suggestions" ON.
-  </label><br>
-  <h2>Wildcards</h2>
-  <div id="folder-create">
-    <input type="text" id="newFolderName" placeholder="New folder name">
-    <button id="createFolderBtn">Create Folder</button>
+  <!-- Back to root -->
+  <button id="backBtn" style="display:none; margin-bottom:8px;">◀ Back</button>
+  <h2 id="viewTitle">Settings</h2>
+  <!-- Root view content -->
+  <div id="rootContent">
+    <!-- Settings -->
+    <label style="font-size:0.85rem;">
+      <input type="checkbox" id="preservePrompt" checked>
+      <b>Preserve Original img prompts on Enhance</b><br>
+      　・Uncheck this to randomize enhance prompts.
+    </label><br>
+    <label style="font-size:0.85rem;">
+      <input type="checkbox" id="alternativeDanbooruAutocomplete">
+      <b>Full Alternative Danbooru Autocomplete</b><br>
+      　・a1111 WebUI style Danbooru Autocomplete.<br>
+      　・Use with "Disable Tag Suggestions" ON.
+    </label><br><br>
+    <b style="font-size:0.9rem;">Autocomplete Trigger Keys</b><br>
+    <label style="font-size:0.85rem;">
+      <input type="checkbox" id="triggerSpace" checked>
+      <b>Space</b>: Not interfering with NAI default.
+    </label><br>
+    <label style="font-size:0.85rem;">
+      <input type="checkbox" id="triggerTab">
+      <b>Tab</b>: Use with "Disable Tag Suggestions" ON.
+    </label><br><br>
+    
+    <!-- Root upload -->
+    <h2>Wildcards</h2>
+    <div id="folder-create">
+      <input type="text" id="newFolderName" placeholder="New folder name">
+      <button id="createFolderBtn">Create Folder</button>
+    </div><br>
+    <input type="file" id="fileRoot" accept=".txt" multiple><br><br>
   </div>
-  <input type="file" id="file" accept=".txt" multiple><br><br>
+  <!-- Folder-specific upload -->
+  <input type="file" id="fileInFolder" accept=".txt" multiple style="display:none;">
+  <!-- List container -->
   <ul id="list"></ul>
   <script src="popup.js"></script>
 </body>
