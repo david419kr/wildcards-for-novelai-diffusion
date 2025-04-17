@@ -1,7 +1,7 @@
 // NovelAI Wildcards – popup.js
 const fileInput = document.getElementById('file');
-const list      = document.getElementById('list');
-const v3chk     = true; // document.getElementById('v3mode');
+const list = document.getElementById('list');
+const v3chk = true; // document.getElementById('v3mode');
 
 fileInput.addEventListener('change', () => {
   const files = Array.from(fileInput.files);
@@ -74,6 +74,42 @@ chrome.storage.local.get('preservePrompt', d => {
 // 체크 변경 → 저장
 preserveChk.addEventListener('change', () => {
   chrome.storage.local.set({ preservePrompt: preserveChk.checked });
+});
+
+const autoCompleteChk = document.getElementById('alternativeDanbooruAutocomplete');
+
+// 저장값 → 체크박스 반영
+chrome.storage.local.get('alternativeDanbooruAutocomplete', d => {
+  autoCompleteChk.checked = !!d.alternativeDanbooruAutocomplete;
+});
+
+// 체크 변경 → 저장
+autoCompleteChk.addEventListener('change', () => {
+  chrome.storage.local.set({ alternativeDanbooruAutocomplete: autoCompleteChk.checked });
+});
+
+const tabChk = document.getElementById('triggerTab');
+
+// 저장값 → 체크박스 반영
+chrome.storage.local.get('triggerTab', d => {
+  tabChk.checked = !!d.triggerTab;
+});
+
+// 체크 변경 → 저장
+tabChk.addEventListener('change', () => {
+  chrome.storage.local.set({ triggerTab: tabChk.checked });
+});
+
+const spaceChk = document.getElementById('triggerSpace');
+
+// 저장값 → 체크박스 반영
+chrome.storage.local.get('triggerSpace', d => {
+  spaceChk.checked = !!d.triggerSpace;
+});
+
+// 체크 변경 → 저장
+spaceChk.addEventListener('change', () => {
+  chrome.storage.local.set({ triggerSpace: spaceChk.checked });
 });
 
 document.addEventListener('DOMContentLoaded', refresh);

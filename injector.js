@@ -14,7 +14,10 @@
 
   let dict = {};
   let v3 = false;
-  let preservePrompt = false;
+  let preservePrompt = true;
+  let alternativeDanbooruAutocomplete = false;
+  let triggerTab = false;
+  let triggerSpace = true;
 
   function waitForElement(selector) {
     return new Promise(resolve => {
@@ -140,18 +143,6 @@
       console.error('[Wildcard] img2img metadata 처리 오류:', err);
     }
   }                                                   // <<< NEW
-  /* ------------------------------------------------- */
-
-  window.addEventListener('message', e => {
-    if (e.source !== window) return;
-
-    if (e.data?.type === '__WILDCARD_INIT__' ||
-      e.data?.type === '__WILDCARD_UPDATE__') {
-      dict = e.data.map || {};
-      v3 = !!e.data.v3;
-      preservePrompt = !!e.data.preservePrompt;   // ★ 추가
-    }
-  });
 
   /******** 1. swap logic ********/
   function swap(txt) {
@@ -299,13 +290,33 @@
   let autocompleteDict = [];
   window.addEventListener('message', e => {
     if (e.source !== window) return;
-    if (e.data?.type === '__WILDCARD_INIT__' || e.data?.type === '__WILDCARD_UPDATE__') {
-      dict = e.data.map || {};
-      v3 = !!e.data.v3;
-    }
+    const { type, map, v3: newV3, preservePrompt: newPreserve, alternativeDanbooruAutocomplete: newAlt, triggerTab: newTab, triggerSpace: newSpace, data } = e.data || {};
 
-    if (e.data?.type === '__AUTOCOMPLETE_DICT__') {
-      autocompleteDict = e.data.data || [];
+    // 옵션 초기화 및 업데이트 처리
+    if (type === '__WILDCARD_INIT__' || type === '__WILDCARD_UPDATE__') {
+      dict = map || {};
+      v3 = !!newV3;
+      preservePrompt = !!newPreserve;
+      triggerTab = !!newTab;
+      triggerSpace = !!newSpace;
+
+      // alternativeDanbooruAutocomplete 토글 즉시 반영
+      if (typeof newAlt !== 'undefined') {
+        alternativeDanbooruAutocomplete = !!newAlt;
+        if (alternativeDanbooruAutocomplete) {
+          // 켜졌을 때 사전 재요청
+          window.postMessage({ type: '__REQUEST_AUTOCOMPLETE_DICT__' }, '*');
+        } else {
+          // 꺼졌을 때 기존 사전 초기화
+          autocompleteDict = [];
+        }
+      }
+    }
+    // 실제 사전 데이터 수신
+    else if (type === '__AUTOCOMPLETE_DICT__') {
+      if (alternativeDanbooruAutocomplete) {
+        autocompleteDict = data || [];
+      }
     }
   });
 
@@ -500,14 +511,16 @@
         const items = list.querySelectorAll('li');
         if (!items.length) return;
 
-        if (e.key === 'ArrowDown') {
-          e.preventDefault(); selIdx = (selIdx + 1) % items.length; highlight();
-        } else if (e.key === 'ArrowUp') {
-          e.preventDefault(); selIdx = (selIdx - 1 + items.length) % items.length; highlight();
-        } else if (e.key === 'Tab') {
+        if (triggerTab && e.key === 'Tab') {
+          e.preventDefault(); choose(items[selIdx]);
+        } else if (triggerSpace && e.key === ' ') {
           e.preventDefault(); choose(items[selIdx]);
         } else if (e.key === 'Escape') {
           hide();
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault(); selIdx = (selIdx + 1) % items.length; highlight();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault(); selIdx = (selIdx - 1 + items.length) % items.length; highlight();
         }
       }
 

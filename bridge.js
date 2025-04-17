@@ -1,35 +1,71 @@
 // bridge.js
 (async () => {
   // 1) get settings from storage  ← preservePrompt 포함
-  const {
-    wildcards      = {},
-    v3mode         = false,
-    preservePrompt = false      // ★ 추가
-  } = await chrome.storage.local.get(['wildcards','v3mode','preservePrompt']);
+  let {
+    wildcards = {},
+    v3mode = false,
+    preservePrompt = true,
+    alternativeDanbooruAutocomplete = false,
+    triggerTab = false,
+    triggerSpace = true
+  } = await chrome.storage.local.get(['wildcards', 'v3mode', 'preservePrompt', 'alternativeDanbooruAutocomplete', 'triggerTab', 'triggerSpace']);
 
   // 2) inject script to page
   const s = document.createElement('script');
   s.src = chrome.runtime.getURL('injector.js');
   s.onload = () => {
     window.postMessage({
-      type : '__WILDCARD_INIT__',
-      map  : wildcards,
-      v3   : v3mode,
-      preservePrompt                // ★ 추가
+      type: '__WILDCARD_INIT__',
+      map: wildcards,
+      v3: v3mode,
+      preservePrompt,
+      alternativeDanbooruAutocomplete,
+      triggerTab,
+      triggerSpace
     }, '*');
     s.remove();
   };
   (document.head || document.documentElement).appendChild(s);
 
   // 3) propagate later changes
-  chrome.storage.onChanged.addListener(ch => {
-    if (ch.wildcards || ch.v3mode || ch.preservePrompt)
+  chrome.storage.onChanged.addListener(changes => {
+    // wildcards, v3mode, preservePrompt, alternativeDanbooruAutocomplete 중 하나라도 바뀌면 반영
+    if (changes.wildcards ||
+      changes.v3mode ||
+      changes.preservePrompt ||
+      changes.alternativeDanbooruAutocomplete ||
+      changes.triggerTab ||
+      changes.triggerSpace) {
+
+      wildcards = changes.wildcards
+        ? changes.wildcards.newValue
+        : wildcards;
+      v3mode = changes.v3mode
+        ? changes.v3mode.newValue
+        : v3mode;
+      preservePrompt = changes.preservePrompt
+        ? changes.preservePrompt.newValue
+        : preservePrompt;
+      alternativeDanbooruAutocomplete = changes.alternativeDanbooruAutocomplete
+        ? changes.alternativeDanbooruAutocomplete.newValue
+        : alternativeDanbooruAutocomplete;
+      triggerTab = changes.triggerTab
+        ? changes.triggerTab.newValue
+        : triggerTab;
+      triggerSpace = changes.triggerSpace
+        ? changes.triggerSpace.newValue
+        : triggerSpace;
+
       window.postMessage({
-        type : '__WILDCARD_UPDATE__',
-        map  : (ch.wildcards      ? ch.wildcards.newValue      : wildcards)      || {},
-        v3   : (ch.v3mode         ? ch.v3mode.newValue         : v3mode)         || false,
-        preservePrompt : (ch.preservePrompt ? ch.preservePrompt.newValue : preservePrompt) || false
+        type: '__WILDCARD_UPDATE__',
+        map: wildcards,
+        v3: v3mode,
+        preservePrompt,
+        alternativeDanbooruAutocomplete,
+        triggerTab,
+        triggerSpace,
       }, '*');
+    }
   });
 
   const csvUrl = chrome.runtime.getURL('dictionary.csv');
@@ -61,10 +97,15 @@
         word,
         colorCode: colorCode.trim(),
         popCount: parseInt(popCount),
-        aliases: aliases.replace(/"/g,'').split(',').map(a => a.trim())
+        aliases: aliases.replace(/"/g, '').split(',').map(a => a.trim())
       };
     });
 
-  window.postMessage({ type: '__AUTOCOMPLETE_DICT__', data: autocompleteDict }, '*');
-
+  window.addEventListener('message', e => {
+    if (e.source !== window || e.data?.type !== '__REQUEST_AUTOCOMPLETE_DICT__') return;
+    window.postMessage({
+      type: '__AUTOCOMPLETE_DICT__',
+      data: autocompleteDict
+    }, '*');
+  });
 })();
