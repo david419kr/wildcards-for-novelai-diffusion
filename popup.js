@@ -125,14 +125,14 @@ function refresh() {
         // 공백→_ 치환, 중복 _ 제거
         const sanitized = raw.trim().replace(/\s+/g, '_').replace(/_+/g, '_');
         if (!sanitized || sanitized === currentFolder) {
-          return alert('유효하지 않거나 같은 이름입니다.');
+          return alert('Invalid folder name.');
         }
         chrome.storage.local.get(['wildcards','wildcardFolders'], data => {
           const map     = data.wildcards || {};
           const folders = data.wildcardFolders || [];
           // 새 이름이 이미 존재하는지 검사
           if (folders.includes(sanitized) || Object.keys(map).some(k => k === sanitized || k.startsWith(sanitized + '/'))) {
-            return alert('이미 존재하는 폴더명입니다: ' + sanitized);
+            return alert('Folder already exists: ' + sanitized);
           }
           // 1) folders 배열 업데이트
           const newFolders = folders.map(f => f === currentFolder ? sanitized : f);
