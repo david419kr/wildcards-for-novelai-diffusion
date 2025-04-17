@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Wildcards for NovelAI Diffusion",
-  "description": "swap __wildcards__ prompts to .txt file content",
+  "description": "swap __wildcards__ prompts to .txt file content + Alternative prompt autocomplete",
   "version": "2.1.5",
-  "permissions": ["storage", "scripting", "activeTab"],
+  "permissions": ["storage"],
   "host_permissions": ["https://image.novelai.net/*"],
   "content_scripts": [
     {
