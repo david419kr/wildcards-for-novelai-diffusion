@@ -1,19 +1,57 @@
 <!doctype html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <title>Wildcards txt files</title>
   <style>
-    body { font-family: sans-serif; width: 320px; padding: 12px; }
-    ul { padding: 0; list-style: none; }
-    li { margin: 4px 0; }
-    .folder-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-weight: bold; color: blue; }
-    .file-item { display: flex; align-items: center; justify-content: space-between; }
-    button { margin-left: 8px; }
-    select { margin-left: 8px; }
-    .folder-list { padding-left: 12px; display: none; }
+    body {
+      font-family: sans-serif;
+      width: 320px;
+      padding: 12px;
+    }
+
+    ul {
+      padding: 0;
+      list-style: none;
+    }
+
+    li {
+      margin: 4px 0;
+    }
+
+    .folder-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      font-weight: bold;
+      color: blue;
+    }
+
+    .file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;     /* 줄 바꿈 허용 */
+    word-break: break-all;
+   }
+
+    button {
+      margin-left: 8px;
+    }
+
+    select {
+      margin-left: 8px;
+    }
+
+    .folder-list {
+      padding-left: 12px;
+      display: none;
+    }
   </style>
 </head>
+
 <body>
   <!-- Back to root -->
   <button id="backBtn" style="display:none; margin-bottom:8px;">◀ Back</button>
@@ -41,7 +79,7 @@
       <input type="checkbox" id="triggerTab">
       <b>Tab</b>: Use with "Disable Tag Suggestions" ON.
     </label><br><br>
-    
+
     <!-- Root upload -->
     <h2>Wildcards</h2>
     <div id="folder-create">
@@ -56,4 +94,5 @@
   <ul id="list"></ul>
   <script src="popup.js"></script>
 </body>
+
 </html>
