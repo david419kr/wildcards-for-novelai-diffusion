@@ -12,7 +12,8 @@ const rootContent     = document.getElementById('rootContent');
 
 // Create new folder
 document.getElementById('createFolderBtn').addEventListener('click', () => {
-  const name = folderInput.value.trim();
+  let raw = folderInput.value.trim();
+  let name = raw.replace(/\s+/g, '_').replace(/_+/g, '_');
   if (!name) return alert('Input folder name.');
   chrome.storage.local.get(['wildcards','wildcardFolders'], d => {
     const map     = d.wildcards || {};
@@ -41,7 +42,8 @@ fileRoot.addEventListener('change', e => {
     let remaining = files.length;
     files.forEach(f => {
       const rel = f.webkitRelativePath || f.name;
-      const key = rel.replace(/\.txt$/i, '');
+      const rawKey = rel.replace(/\.txt$/i, '');
+      const key = rawKey.replace(/\s+/g, '_').replace(/_+/g, '_');
       if (map[key]) {
         alert(`File already exists: ${key}`);
         if (--remaining === 0) chrome.storage.local.set({ wildcards: map }, refresh);
@@ -66,8 +68,9 @@ fileInFolder.addEventListener('change', e => {
     const map = d.wildcards || {};
     let remaining = files.length;
     files.forEach(f => {
-      const base = f.name.replace(/\.txt$/i, '');
-      const key  = `${currentFolder}/${base}`;
+      const rawBase = f.name.replace(/\.txt$/i, '');
+      const sanBase = rawBase.replace(/\s+/g, '_').replace(/_+/g, '_');
+      const key     = `${currentFolder}/${sanBase}`;
       if (map[key]) {
         alert(`File already exists: ${key}`);
         if (--remaining === 0) chrome.storage.local.set({ wildcards: map }, refresh);
