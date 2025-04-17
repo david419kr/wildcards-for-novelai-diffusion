@@ -4,7 +4,7 @@
 
   const curlyPattern = /{(?:[^|{}]+\|)+[^|{}]+}/;
   const doublePipePattern = /\|\|(?:[^|]+\|)+[^|]+\|\|/;
-  const simpleWildcardPattern = /__([A-Za-z0-9_\/-]+)__/;
+  const simpleWildcardPattern = /__([A-Za-z0-9_\/\.\-]+)__/;
 
   function containsWildcardSyntax(text) {
     return simpleWildcardPattern.test(text) ||
@@ -147,7 +147,7 @@
   /******** 1. swap logic ********/
   function swap(txt) {
     // 1. __ 토큰 처리
-    let result = txt.replace(/__([A-Za-z0-9_\/-]+)__/g, (match, name) => {
+    let result = txt.replace(/__([A-Za-z0-9_\/\.\-]+)__/g, (match, name) => {
       // 1-1. 정확히 매칭되는 키가 있는지
       let raw = dict[name];
   
@@ -422,7 +422,7 @@
           }
         }
 
-        m = txt.match(/__([A-Za-z0-9_\/-]*)$/);
+        m = txt.match(/__([A-Za-z0-9_\/\.\-]*)$/);
         if (m) {
           const prefix = m[1].toLowerCase();
           const allKeys = Object.keys(dict)
