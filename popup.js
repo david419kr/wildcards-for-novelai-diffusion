@@ -9,6 +9,7 @@ const viewTitle       = document.getElementById('viewTitle');
 const fileRoot        = document.getElementById('fileRoot');
 const fileInFolder    = document.getElementById('fileInFolder');
 const rootContent     = document.getElementById('rootContent');
+let isDragging = false;
 
 // Create new folder
 document.getElementById('createFolderBtn').addEventListener('click', () => {
@@ -31,6 +32,62 @@ document.getElementById('createFolderBtn').addEventListener('click', () => {
 backBtn.addEventListener('click', () => {
   currentFolder = null;
   refresh();
+});
+backBtn.addEventListener('dragenter', e => {
+  if (!currentFolder) return;
+  e.preventDefault();
+  backBtn.classList.add('drop-target');
+});
+backBtn.addEventListener('dragleave', e => {
+  backBtn.classList.remove('drop-target');
+});
+backBtn.addEventListener('drop', e => {
+  e.preventDefault();
+  backBtn.classList.remove('drop-target');
+  const keys = JSON.parse(e.dataTransfer.getData('application/json'));
+  chrome.storage.local.get('wildcards', data => {
+    const map = data.wildcards || {};
+    keys.forEach(oldKey => {
+      const prefix = currentFolder + '/';
+      if (oldKey.startsWith(prefix)) {
+        const base = oldKey.slice(prefix.length);
+        if (!map[base]) {
+          map[base] = map[oldKey];
+          delete map[oldKey];
+        }
+      }
+    });
+    chrome.storage.local.set({ wildcards: map }, () => {
+      currentFolder = null;
+      refresh();
+    });
+  });
+});
+backBtn.addEventListener('dragover', e => {
+  if (currentFolder) e.preventDefault();
+});
+backBtn.addEventListener('drop', e => {
+  e.preventDefault();
+  const keys = JSON.parse(e.dataTransfer.getData('application/json'));
+  chrome.storage.local.get('wildcards', data => {
+    const map = data.wildcards || {};
+    keys.forEach(oldKey => {
+      if (!currentFolder) return;
+      // currentFolder/xxx → xxx
+      const prefix = currentFolder + '/';
+      if (oldKey.startsWith(prefix)) {
+        const base = oldKey.slice(prefix.length);
+        if (!map[base]) {
+          map[base] = map[oldKey];
+          delete map[oldKey];
+        }
+      }
+    });
+    chrome.storage.local.set({ wildcards: map }, () => {
+      currentFolder = null;
+      refresh();
+    });
+  });
 });
 
 // Root upload handler
@@ -194,6 +251,34 @@ function refresh() {
         hdr.className = 'folder-header';
         hdr.textContent = folder;
         hdr.onclick = () => { currentFolder = folder; refresh(); };
+        hdr.addEventListener('dragover', e => e.preventDefault());
+        // drop 시 파일들 해당 폴더로 이동
+        hdr.addEventListener('drop', e => {
+          e.preventDefault();
+          const keys = JSON.parse(e.dataTransfer.getData('application/json'));
+          chrome.storage.local.get(['wildcards','wildcardFolders'], data => {
+            const map = data.wildcards || {};
+            keys.forEach(oldKey => {
+              const base = oldKey.includes('/') ? oldKey.split('/').pop() : oldKey;
+              const newKey = `${folder}/${base}`;
+              // 덮어쓰기 방지
+              if (!map[newKey]) {
+                map[newKey] = map[oldKey];
+                delete map[oldKey];
+              }
+            });
+            chrome.storage.local.set({ wildcards: map }, refresh);
+          });
+        });
+
+        hdr.addEventListener('dragenter', e => {
+          e.preventDefault();
+          hdr.classList.add('drop-target');
+        });
+        // 다른 곳으로 빠져나갈 때 원래대로
+        hdr.addEventListener('dragleave', e => {
+          hdr.classList.remove('drop-target');
+        });
         const delBtn = document.createElement('button');
         delBtn.textContent = 'delete folder';
         delBtn.style.cssText = 'float:right; margin-top:-18px; padding: 0 5px;';
@@ -214,6 +299,32 @@ function refresh() {
       Object.keys(map).filter(k => !k.includes('/')).sort().forEach(name => {
         const li = document.createElement('li');
         li.className = 'file-item';
+        // 파일 경로(key)를 data-key 에 저장
+        const key = currentFolder ? `${currentFolder}/${name}` : name;
+        li.dataset.key = key;
+        // 드래그 가능하게
+        li.setAttribute('draggable', 'true');
+
+        // 클릭으로 선택 토글 (Ctrl/Cmd + 클릭으로 멀티셀렉트)
+        li.addEventListener('click', e => {
+          if (e.ctrlKey || e.metaKey) {
+            li.classList.toggle('selected');
+          } else {
+            // 단일 선택 모드
+            document.querySelectorAll('.file-item.selected')
+              .forEach(el => el.classList.remove('selected'));
+            li.classList.add('selected');
+          }
+        });
+
+        // dragstart 시 선택된 항목들의 key 리스트 전송
+        li.addEventListener('dragstart', e => {
+          const selItems = document.querySelectorAll('.file-item.selected');
+          const keys = selItems.length
+            ? Array.from(selItems).map(el => el.dataset.key)
+            : [key];
+          e.dataTransfer.setData('application/json', JSON.stringify(keys));
+        });
         li.textContent = name + '.txt';
         const del = document.createElement('button');
         del.textContent = 'delete';
@@ -228,6 +339,32 @@ function refresh() {
         const fileName = fullKey.slice(currentFolder.length + 1);
         const li = document.createElement('li');
         li.className = 'file-item';
+        // 파일 경로(key)를 data-key 에 저장
+        const key = currentFolder ? `${currentFolder}/${fileName}` : fileName;
+        li.dataset.key = key;
+        // 드래그 가능하게
+        li.setAttribute('draggable', 'true');
+
+        // 클릭으로 선택 토글 (Ctrl/Cmd + 클릭으로 멀티셀렉트)
+        li.addEventListener('click', e => {
+          if (e.ctrlKey || e.metaKey) {
+            li.classList.toggle('selected');
+          } else {
+            // 단일 선택 모드
+            document.querySelectorAll('.file-item.selected')
+              .forEach(el => el.classList.remove('selected'));
+            li.classList.add('selected');
+          }
+        });
+
+        // dragstart 시 선택된 항목들의 key 리스트 전송
+        li.addEventListener('dragstart', e => {
+          const selItems = document.querySelectorAll('.file-item.selected');
+          const keys = selItems.length
+            ? Array.from(selItems).map(el => el.dataset.key)
+            : [key];
+          e.dataTransfer.setData('application/json', JSON.stringify(keys));
+        });
         li.textContent = fileName + '.txt';
         const del = document.createElement('button');
         del.textContent = 'delete';
@@ -240,6 +377,73 @@ function refresh() {
 }
 
 document.addEventListener('DOMContentLoaded', refresh);
+
+document.addEventListener('dragstart', e => {
+  // file-item 또는 그 자식 요소에서 시작한 드래그라면
+  if (e.target.closest('.file-item')) {
+    backBtn.classList.add('active');
+  }
+});
+
+// 드래그가 종료될 때 (drop 또는 취소)
+document.addEventListener('dragend', e => {
+  backBtn.classList.remove('active');
+});
+
+// 혹시 drop 이벤트에서 바로 제거되지 않는 경우 안전망으로
+backBtn.addEventListener('drop', e => {
+  backBtn.classList.remove('active');
+});
+
+document.addEventListener('dragstart', e => {
+  if (e.target.closest('.file-item')) {
+    // 백 버튼
+    backBtn.classList.add('active');
+    // 모든 폴더 헤더 (root 뷰에만 존재)
+    document.querySelectorAll('.folder-header')
+      .forEach(el => el.classList.add('active'));
+  }
+});
+
+// 드래그 종료 시: active 클래스 제거
+document.addEventListener('dragend', () => {
+  backBtn.classList.remove('active');
+  document.querySelectorAll('.folder-header')
+    .forEach(el => el.classList.remove('active'));
+});
+// 혹시 drop 시에도 안전하게 제거
+document.addEventListener('drop', () => {
+  backBtn.classList.remove('active');
+  document.querySelectorAll('.folder-header')
+    .forEach(el => el.classList.remove('active'));
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  // 1) 드래그 시작/끝 토글
+  document.addEventListener('dragstart', e => {
+    if (e.target.closest('.file-item')) isDragging = true;
+  });
+  document.addEventListener('dragend', () => { isDragging = false; });
+  document.addEventListener('drop', () => { isDragging = false; });
+
+  // 2) 휠 스크롤: 기본 동작 그대로 두어서 드래그 중에도 스크롤이 먹히도록
+  //    (아예 리스너를 두지 않거나, passive 옵션으로 preventDefault 제거)
+
+  // 3) 자동 상하 스크롤
+  document.addEventListener('dragover', e => {
+    if (!isDragging) return;
+    const TOP_ZONE = 40;                   // 상단에서 40px 이내
+    const BOTTOM_ZONE = window.innerHeight - 40; // 하단에서 40px 이내
+
+    if (e.clientY < TOP_ZONE) {
+      // 위로
+      window.scrollBy(0, -20);
+    } else if (e.clientY > BOTTOM_ZONE) {
+      // 아래로 (필요시)
+      window.scrollBy(0, 20);
+    }
+  });
+});
 
 // Settings checkbox handlers
 const preserveChk = document.getElementById('preservePrompt');
