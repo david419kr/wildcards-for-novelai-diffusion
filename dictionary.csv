@@ -288,7 +288,7 @@ toes,0,152446,
 upper_teeth_only,0,152212,upper_teeth
 legs,0,151997,leg
 wrist_cuffs,0,151507,"detached_cuffs,wrist_cuff,wristcuff,wristcuffs"
-v,0,151368,"peace_sign,v_sign"
+peace sign,0,151368,"v,v_sign"
 feet_out_of_frame,0,151198,
 sketch,0,151011,"rough,rough_sketch,/sk"
 bar_censor,0,150417,"censor_bar,censor_bars"
@@ -1251,7 +1251,7 @@ lantern,0,27516,lanterns
 oni,0,27477,
 skull,0,27415,skulls
 rock,0,27335,rocks
-double_v,0,27325,double_peace
+double_peace,0,27325,double_v
 impossible_clothes,0,27310,impossible_clothing
 female_masturbation,0,27301,masturbation_(female)
 brown_belt,0,27281,
