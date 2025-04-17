@@ -9,8 +9,55 @@ const viewTitle = document.getElementById('viewTitle');
 const fileRoot = document.getElementById('fileRoot');
 const fileInFolder = document.getElementById('fileInFolder');
 const rootContent = document.getElementById('rootContent');
+const langToggle = document.getElementById('langToggle');
 let isDragging = false;
 let lastSelectedIndex = null;
+
+const LANG_KEY = 'lang';
+
+// popup.js 최상단에 추가
+const translations = {
+  en: {
+    settings: "Settings",
+    preserveLabel: "Preserve Original img prompts on Enhance",
+    preserveDesc: "・Uncheck this to randomize enhance prompts.",
+    alternativeLabel: "Full Alternative Danbooru Autocomplete",
+    alternativeDesc: "・a1111 WebUI style Danbooru Autocomplete.",
+    triggerTitle: "Autocomplete Trigger Keys",
+    space: "Space",
+    spaceDesc: "Works fine along with NAI default.",
+    tab: "Tab",
+    tabDesc: "Use with \"Disable Tag Suggestions\" ON.",
+    wildcards: "Wildcards"
+  },
+  jp: {
+    settings: "設定",
+    preserveLabel: "品質向上時、画像の元々のプロンプトを使う",
+    preserveDesc: "・品質向上時もランダマイズしたい場合は解除",
+    alternativeLabel: "カスタム入力候補予測（軽量）を使う",
+    alternativeDesc: "・WebUiスタイルのDanbooruタグ予測変換",
+    triggerTitle: "予測変換のトリガーキー",
+    space: "Space",
+    spaceDesc: "NAIの基本動作と衝突せず動作します。",
+    tab: "Tab",
+    tabDesc: "「入力候補予測をやめる」ON推奨",
+    wildcards: "ワイルドカード"
+  }
+};
+
+function setLang(lang) {
+  const keys = translations[lang] || {};
+  Object.keys(keys).forEach(key => {
+    const el = document.querySelector('[data-i18n-key="' + key + '"]');
+    if (el) el.textContent = keys[key];
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  setLang('en'); // 초기 언어 설정
+  document.getElementById('btn-en').addEventListener('click', () => setLang('en'));
+  document.getElementById('btn-jp').addEventListener('click', () => setLang('jp'));
+});
 
 // Create new folder
 document.getElementById('createFolderBtn').addEventListener('click', () => {
@@ -159,12 +206,14 @@ function refresh() {
       rootContent.style.display = 'none';
       fileRoot.style.display = 'none';
       fileInFolder.style.display = 'inline-block';
+      langToggle.style.display = 'none';
     } else {
       backBtn.style.display = 'none';
       viewTitle.textContent = 'Settings';
       rootContent.style.display = 'block';
       fileRoot.style.display = 'inline-block';
       fileInFolder.style.display = 'none';
+      langToggle.style.display = 'block';
     }
 
     // Delete all button
@@ -176,7 +225,7 @@ function refresh() {
     if (currentFolder) {
       const renameBtn = document.createElement('button');
       renameBtn.textContent = 'rename folder';
-      renameBtn.style.cssText = 'float:right; margin-top:-100px;';
+      renameBtn.style.cssText = 'float:right; margin-top:-60px;';
       renameBtn.onclick = () => {
         const raw = prompt('Enter new folder name:', currentFolder);
         if (!raw) return;  // 취소 시 종료
@@ -466,6 +515,22 @@ document.addEventListener('DOMContentLoaded', () => {
       // 아래로 (필요시)
       window.scrollBy(0, 20);
     }
+  });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  // 1) 저장된 언어 불러오기(없으면 en)
+  chrome.storage.local.get(LANG_KEY, data => {
+    const lang = data[LANG_KEY] || 'en';
+    setLang(lang);
+  });
+
+  // 2) 버튼 클릭 시 저장 + 반영
+  document.getElementById('btn-en').addEventListener('click', () => {
+    chrome.storage.local.set({ [LANG_KEY]: 'en' }, () => setLang('en'));
+  });
+  document.getElementById('btn-jp').addEventListener('click', () => {
+    chrome.storage.local.set({ [LANG_KEY]: 'jp' }, () => setLang('jp'));
   });
 });
 
