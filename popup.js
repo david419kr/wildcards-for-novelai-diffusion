@@ -115,6 +115,50 @@ function refresh() {
     delAll.textContent = 'delete all';
     delAll.style.cssText = 'float:right; margin-top:-25px;';
 
+    if (currentFolder) {
+      const renameBtn = document.createElement('button');
+      renameBtn.textContent = 'rename folder';
+      renameBtn.style.cssText = 'float:right; margin-top:-100px;';
+      renameBtn.onclick = () => {
+        const raw = prompt('Enter new folder name:', currentFolder);
+        if (!raw) return;  // 취소 시 종료
+        // 공백→_ 치환, 중복 _ 제거
+        const sanitized = raw.trim().replace(/\s+/g, '_').replace(/_+/g, '_');
+        if (!sanitized || sanitized === currentFolder) {
+          return alert('유효하지 않거나 같은 이름입니다.');
+        }
+        chrome.storage.local.get(['wildcards','wildcardFolders'], data => {
+          const map     = data.wildcards || {};
+          const folders = data.wildcardFolders || [];
+          // 새 이름이 이미 존재하는지 검사
+          if (folders.includes(sanitized) || Object.keys(map).some(k => k === sanitized || k.startsWith(sanitized + '/'))) {
+            return alert('이미 존재하는 폴더명입니다: ' + sanitized);
+          }
+          // 1) folders 배열 업데이트
+          const newFolders = folders.map(f => f === currentFolder ? sanitized : f);
+          // 2) wildcards map 키들 재명명
+          const newMap = {};
+          Object.keys(map).forEach(key => {
+            if (key.startsWith(currentFolder + '/')) {
+              const rest = key.slice(currentFolder.length + 1);
+              newMap[ sanitized + '/' + rest ] = map[key];
+            } else {
+              newMap[key] = map[key];
+            }
+          });
+          // 저장 후, currentFolder 갱신 및 화면 새로고침
+          chrome.storage.local.set({
+            wildcards:      newMap,
+            wildcardFolders: newFolders
+          }, () => {
+            currentFolder = sanitized;
+            refresh();
+          });
+        });
+      };
+      list.appendChild(renameBtn);
+    }
+
     if (!currentFolder) {
       // 1) 루트 뷰: 전체 삭제
       delAll.onclick = () => {
