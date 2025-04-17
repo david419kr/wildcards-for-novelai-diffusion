@@ -573,8 +573,16 @@
 
 
       function highlight() {
+        // 1) active 클래스 토글
         list.querySelectorAll('li').forEach((li, i) =>
-          li.classList.toggle('active', i === selIdx));
+          li.classList.toggle('active', i === selIdx)
+        );
+      
+        // 2) 활성화된 항목이 보이도록 스크롤
+        const activeLi = list.querySelector('li.active');
+        if (activeLi) {
+          activeLi.scrollIntoView({ block: 'nearest' });
+        }
       }
       function hide() {
         list.style.display = 'none'; selIdx = -1;
