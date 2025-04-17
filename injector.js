@@ -427,32 +427,52 @@
         m = txt.match(/([A-Za-z0-9_-]{1,})$/);
         if (m && autocompleteDict.length) {
           const prefix = m[1].toLowerCase();
-          const entries = autocompleteDict
+          // 1) 원본 단어에 매치되는 항목
+          const origMatches = autocompleteDict
+            .filter(d => d.word.toLowerCase().includes(prefix))
+            .map(d => ({
+              type: 'dict',
+              original: d.word,
+              text: d.word,
+              color: colorMap[d.colorCode] || 'red',
+              rawCount: d.popCount,
+              aliasUsed: false
+            }));
+
+          // 2) 원본에 매치 안 되고 alias에만 매치되는 항목
+          const aliasMatches = autocompleteDict
             .filter(d =>
-              d.word.toLowerCase().includes(prefix) ||
+              !d.word.toLowerCase().includes(prefix) &&
               d.aliases.some(a => a.toLowerCase().includes(prefix))
             )
-            .map(d => {
-              const matchedAlias = d.aliases.find(a => a.toLowerCase().includes(prefix));
-              return {
-                word: d.word,
-                alias: matchedAlias,
-                colorCode: d.colorCode,
-                popCount: d.popCount
-              };
-            })
-            .sort((a, b) => b.popCount - a.popCount)
-            .slice(0, 50);
-
-          if (entries.length) {
-            render(entries.map(e => ({
+            .map(d => ({
               type: 'dict',
-              original: e.alias || e.word,
-              text: e.word,
-              color: colorMap[e.colorCode] || 'red',
-              popCount: formatCount(e.popCount),
-              aliasUsed: !!e.alias && e.alias.toLowerCase().includes(prefix)
-            })));
+              original: d.aliases.find(a => a.toLowerCase().includes(prefix)),
+              text: d.word,
+              color: colorMap[d.colorCode] || 'red',
+              rawCount: d.popCount,
+              aliasUsed: true
+            }));
+
+          // 3) 합치고 rawCount 기준 내림차순 정렬
+          let entries = origMatches.concat(aliasMatches);
+          entries.sort((a, b) => b.rawCount - a.rawCount);
+
+          // 4) 포맷 적용 및 상위 50개 추출
+          entries = entries
+            .slice(0, 50)
+            .map(e => ({
+              type: e.type,
+              original: e.original,
+              text: e.text,
+              color: e.color,
+              popCount: formatCount(e.rawCount),
+              aliasUsed: e.aliasUsed
+            }));
+
+          // 5) 렌더링
+          if (entries.length) {
+            render(entries);
             return;
           }
         }
@@ -577,7 +597,7 @@
         list.querySelectorAll('li').forEach((li, i) =>
           li.classList.toggle('active', i === selIdx)
         );
-      
+
         // 2) 활성화된 항목이 보이도록 스크롤
         const activeLi = list.querySelector('li.active');
         if (activeLi) {
