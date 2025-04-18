@@ -15,7 +15,7 @@
   let dict = {};
   let v3 = false;
   let preservePrompt = true;
-  let alternativeDanbooruAutocomplete = false;
+  let alternativeDanbooruAutocomplete = true;
   let triggerTab = false;
   let triggerSpace = true;
 

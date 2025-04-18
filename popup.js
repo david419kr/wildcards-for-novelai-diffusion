@@ -10,12 +10,22 @@ const fileRoot = document.getElementById('fileRoot');
 const fileInFolder = document.getElementById('fileInFolder');
 const rootContent = document.getElementById('rootContent');
 const langToggle = document.getElementById('langToggle');
+const fileCreateInFolder = document.getElementById('fileCreateInFolder');
+
 let isDragging = false;
 let lastSelectedIndex = null;
 
+// 편집 모드 관련 변수
+let currentEditingFile = null;
+const editorMode = document.getElementById('editor-mode');
+const editorBackBtn = document.getElementById('editor-back-btn');
+const fileNameEditor = document.getElementById('file-name-editor');
+const fileContentEditor = document.getElementById('file-content-editor');
+const saveFileBtn = document.getElementById('save-file-btn');
+
+
 const LANG_KEY = 'lang';
 
-// popup.js 최상단에 추가
 const translations = {
   en: {
     settings: "Settings",
@@ -75,6 +85,71 @@ document.getElementById('createFolderBtn').addEventListener('click', () => {
     folderInput.value = '';
   });
 });
+
+// Create new file 
+const createFileBtn = document.getElementById('createFileBtn');
+createFileBtn.addEventListener('click', () => {
+  let raw = folderInput.value.trim();
+  let name = raw.replace(/\s+/g, '_').replace(/_+/g, '_');
+  
+  if (!name) return alert('Input file name.');
+  
+  chrome.storage.local.get('wildcards', data => {
+    const map = data.wildcards || {};
+    
+    // 파일 키 생성 (현재 폴더에 있으면 폴더명/파일명, 아니면 파일명)
+    const key = currentFolder ? `${currentFolder}/${name}` : name;
+    
+    // 이미 존재하는 파일인지 확인
+    if (map[key]) {
+      return alert(`File already exists: ${key}`);
+    }
+    
+    // 새 파일 생성 (내용은 빈 문자열로 시작)
+    map[key] = '';
+    
+    // 저장 후 화면 갱신
+    chrome.storage.local.set({ wildcards: map }, () => {
+      folderInput.value = '';
+      
+      // 추가: 파일 생성 후 바로 에디터 모드로 전환
+      enterEditMode(key, '');
+    });
+  });
+});
+
+const createFileBtnInFolder = document.getElementById('createFileBtnInFolder');
+createFileBtnInFolder.addEventListener('click', () => {
+  const input = document.getElementById('newFileNameInFolder')
+  let raw = input.value.trim();
+  let name = raw.replace(/\s+/g, '_').replace(/_+/g, '_');
+  
+  if (!name) return alert('Input file name.');
+  
+  chrome.storage.local.get('wildcards', data => {
+    const map = data.wildcards || {};
+    
+    // 파일 키 생성 (현재 폴더에 있으면 폴더명/파일명, 아니면 파일명)
+    const key = currentFolder ? `${currentFolder}/${name}` : name;
+    
+    // 이미 존재하는 파일인지 확인
+    if (map[key]) {
+      return alert(`File already exists: ${key}`);
+    }
+    
+    // 새 파일 생성 (내용은 빈 문자열로 시작)
+    map[key] = '';
+    
+    // 저장 후 화면 갱신
+    chrome.storage.local.set({ wildcards: map }, () => {
+      input.value = '';
+      
+      // 추가: 파일 생성 후 바로 에디터 모드로 전환
+      enterEditMode(key, '');
+    });
+  });
+});
+
 
 // Back to root view
 backBtn.addEventListener('click', () => {
@@ -207,6 +282,7 @@ function refresh() {
       fileRoot.style.display = 'none';
       fileInFolder.style.display = 'inline-block';
       langToggle.style.display = 'none';
+      fileCreateInFolder.style.display = 'block'; // Show file creation button in folder view
     } else {
       backBtn.style.display = 'none';
       viewTitle.textContent = 'Settings';
@@ -214,6 +290,7 @@ function refresh() {
       fileRoot.style.display = 'inline-block';
       fileInFolder.style.display = 'none';
       langToggle.style.display = 'block';
+      fileCreateInFolder.style.display = 'none'; // Hide file creation button in root view
     }
 
     // Delete all button
@@ -223,12 +300,10 @@ function refresh() {
     delAll.style.cssText = 'float:right; margin-top:-25px;';
 
     if (currentFolder) {
-      const renameBtn = document.createElement('button');
-      renameBtn.textContent = 'rename folder';
-      renameBtn.style.cssText = 'float:right; margin-top:-60px;';
+      const renameBtn = document.getElementById('renameFolderBtn');
       renameBtn.onclick = () => {
-        const raw = prompt('Enter new folder name:', currentFolder);
-        if (!raw) return;  // 취소 시 종료
+        const raw = document.getElementById('newFileNameInFolder').value.trim();
+        if (!raw) return alert('Input folder name.');
         // 공백→_ 치환, 중복 _ 제거
         const sanitized = raw.trim().replace(/\s+/g, '_').replace(/_+/g, '_');
         if (!sanitized || sanitized === currentFolder) {
@@ -263,7 +338,6 @@ function refresh() {
           });
         });
       };
-      list.appendChild(renameBtn);
     }
 
     if (!currentFolder) {
@@ -355,6 +429,11 @@ function refresh() {
         // 드래그 가능하게
         li.setAttribute('draggable', 'true');
 
+        li.addEventListener('dblclick', e => {
+          e.stopPropagation(); // 이벤트 버블링 방지
+          enterEditMode(name, map[name]);
+        });
+
         // 클릭으로 선택 토글 (Ctrl/Cmd + 클릭으로 멀티셀렉트)
         li.addEventListener('click', e => {
           // 현재 리스트의 모든 파일 아이템
@@ -388,7 +467,7 @@ function refresh() {
             : [key];
           e.dataTransfer.setData('application/json', JSON.stringify(keys));
         });
-        li.textContent = name + '.txt';
+        li.textContent = name;
         const del = document.createElement('button');
         del.textContent = 'delete';
         del.onclick = () => { delete map[name]; chrome.storage.local.set({ wildcards: map }, refresh); };
@@ -408,6 +487,11 @@ function refresh() {
         // 드래그 가능하게
         li.setAttribute('draggable', 'true');
 
+        li.addEventListener('dblclick', e => {
+          e.stopPropagation(); // 이벤트 버블링 방지
+          enterEditMode(fullKey, map[fullKey]);
+        });
+
         // 클릭으로 선택 토글 (Ctrl/Cmd + 클릭으로 멀티셀렉트)
         li.addEventListener('click', e => {
           // 현재 리스트의 모든 파일 아이템
@@ -441,7 +525,7 @@ function refresh() {
             : [key];
           e.dataTransfer.setData('application/json', JSON.stringify(keys));
         });
-        li.textContent = fileName + '.txt';
+        li.textContent = fileName;
         const del = document.createElement('button');
         del.textContent = 'delete';
         del.onclick = () => { delete map[fullKey]; chrome.storage.local.set({ wildcards: map }, refresh); };
@@ -518,6 +602,97 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+// 편집 모드로 전환하는 함수
+function enterEditMode(key, content) {
+  // 현재 편집 중인 파일 정보 저장
+  currentEditingFile = { key: key };
+  
+  // 파일명과 내용 설정
+  const fileName = key.includes('/') ? key.split('/').pop() : key;
+  fileNameEditor.value = fileName;
+  fileContentEditor.value = content;
+  
+  // 기존 UI 숨기기
+  backBtn.style.display = 'none';
+  viewTitle.style.display = 'none';
+  rootContent.style.display = 'none';
+  list.style.display = 'none';
+  langToggle.style.display = 'none';
+  fileInFolder.style.display = 'none';
+  fileCreateInFolder.style.display = 'none';
+  
+  // 편집 UI 표시
+  editorMode.style.display = 'block';
+}
+
+
+// 일반 모드로 돌아가는 함수
+function exitEditMode() {
+  // 편집 UI 숨기기
+  editorMode.style.display = 'none';
+  
+  // 기존 UI 복원
+  if (currentFolder) {
+    backBtn.style.display = 'inline-block';
+    viewTitle.style.display = 'block';
+    rootContent.style.display = 'none';
+    langToggle.style.display = 'none';
+    fileInFolder.style.display = 'inline-block';
+  } else {
+    backBtn.style.display = 'none';
+    viewTitle.style.display = 'block';
+    rootContent.style.display = 'block';
+    langToggle.style.display = 'block';
+    fileInFolder.style.display = 'none';
+    fileCreateInFolder.style.display = 'block';
+  }
+  list.style.display = 'block';
+  
+  // 현재 편집 파일 정보 초기화
+  currentEditingFile = null;
+  
+  // 화면 갱신
+  refresh();
+}
+
+
+// 파일 내용 저장 함수
+function saveFile() {
+  if (!currentEditingFile) return;
+  
+  chrome.storage.local.get('wildcards', data => {
+    const map = data.wildcards || {};
+    
+    // 파일명이 변경됐는지 확인
+    const newFileName = fileNameEditor.value.trim().replace(/\s+/g, '_').replace(/_+/g, '_');
+    if (!newFileName) return alert('Input File Name.');
+    
+    let newKey;
+    if (currentFolder) {
+      newKey = `${currentFolder}/${newFileName}`;
+    } else {
+      newKey = newFileName;
+    }
+    
+    // 파일명이 변경됐고, 새 파일명이 이미 존재하는 경우
+    if (newKey !== currentEditingFile.key && map[newKey]) {
+      return alert(`File Already Exists: ${newKey}`);
+    }
+    
+    // 이전 파일 삭제 (파일명이 변경된 경우)
+    if (newKey !== currentEditingFile.key) {
+      delete map[currentEditingFile.key];
+    }
+    
+    // 새 내용 저장
+    map[newKey] = fileContentEditor.value;
+    
+    // 저장 후 일반 모드로 돌아가기
+    chrome.storage.local.set({ wildcards: map }, exitEditMode);
+  });
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
   // 1) 저장된 언어 불러오기(없으면 en)
   chrome.storage.local.get(LANG_KEY, data => {
@@ -533,6 +708,19 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.storage.local.set({ [LANG_KEY]: 'jp' }, () => setLang('jp'));
   });
 });
+
+// 편집 모드 이벤트 리스너
+editorBackBtn.addEventListener('click', exitEditMode);
+saveFileBtn.addEventListener('click', saveFile);
+
+// 키보드 단축키 지원 (Ctrl+S로 저장)
+fileContentEditor.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault();
+    saveFile();
+  }
+});
+
 
 // Settings checkbox handlers
 const preserveChk = document.getElementById('preservePrompt');

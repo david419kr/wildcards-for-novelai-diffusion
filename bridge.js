@@ -5,7 +5,7 @@
     wildcards = {},
     v3mode = false,
     preservePrompt = true,
-    alternativeDanbooruAutocomplete = false,
+    alternativeDanbooruAutocomplete = true,
     triggerTab = false,
     triggerSpace = true
   } = await chrome.storage.local.get(['wildcards', 'v3mode', 'preservePrompt', 'alternativeDanbooruAutocomplete', 'triggerTab', 'triggerSpace']);

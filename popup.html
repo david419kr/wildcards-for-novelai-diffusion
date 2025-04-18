@@ -119,20 +119,36 @@
       background-color: rgba(0, 172, 193, 0.1);
       cursor: pointer;
     }
+
+    #folder-create {
+      display: flex;
+    }
+
+    #newFolderName {
+      margin-left: -5px;
+    }
+
+    #folder-create button {
+      white-space: nowrap;
+    }
+
+    #fileCreateInFolder {
+      display: flex;
+    }
+
+    #newFileNameInFolder {
+      margin-left: -5px;
+      flex: 0.5;
+      width: 120px;
+    }
+
+    #renameFolderBtn button {
+      white-space: nowrap;
+    }
   </style>
 </head>
 
 <body>
-  <!-- Language switch buttons -->
-  <!-- <div id="langToggle">
-    <button id="btn-en">EN</button>
-    <button id="btn-jp">JP</button>
-  </div> -->
-
-  <!-- Back to root -->
-  <!-- <button id="backBtn" style="display:none; margin-bottom:8px;">◀ Back</button>
-  <h2 id="viewTitle" data-i18n-key="settings">Settings</h2> -->
-
   <button id="backBtn" style="display:none; margin-bottom:8px;">◀ Back</button>
   <header style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
     <h2 id="viewTitle" data-i18n-key="settings">Settings</h2>
@@ -172,16 +188,34 @@
     <!-- Root upload -->
     <h2 id="wildcardsTitle" data-i18n-key="wildcards">Wildcards</h2>
     <div id="folder-create">
-      <input type="text" id="newFolderName" placeholder="New folder name">
-      <button id="createFolderBtn">Create Folder</button>
+      <input type="text" id="newFolderName" placeholder="New Name">
+      <button id="createFolderBtn">New Folder</button>
+      <button id="createFileBtn">New File</button>
     </div><br>
     <input type="file" id="fileRoot" accept=".txt" multiple><br><br>
   </div>
 
-  <!-- Folder-specific upload -->
+  <!-- Folder-specific -->
+  <div id="fileCreateInFolder" style="display:none;">
+    <input type="text" id="newFileNameInFolder" placeholder="New Name">
+    <button id="renameFolderBtn">Rename Folder</button>
+    <button id="createFileBtnInFolder">New File</button>
+  </div><br>
   <input type="file" id="fileInFolder" accept=".txt" multiple style="display:none;">
   <!-- List container -->
   <ul id="list"></ul>
+
+  <div id="editor-mode" style="display: none;">
+    <button id="editor-back-btn">◀ Back</button>
+    <div style="margin: 10px 0;">
+      <label for="file-name-editor">Wildcards Name:</label>
+      <input type="text" id="file-name-editor" style="width: 80%;">
+    </div>
+    <div style="margin: 10px 0;">
+      <textarea id="file-content-editor" style="width: 100%; height: 350px; resize: vertical;"></textarea>
+    </div>
+    <button id="save-file-btn">Save</button>
+  </div>
 
   <!-- External scripts only -->
   <script src="popup.js"></script>
