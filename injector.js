@@ -576,10 +576,10 @@
 
         let len = 0;
         if (type === 'token') {
-          const m = full.match(/__([A-Za-z0-9_-]*)$/);
+          const m = full.match(/__([A-Za-z0-9_\/\.\-]*)$/);
           len = m ? m[0].length : 0;
         } else if (type === 'value') {
-          const m = full.match(/__([A-Za-z0-9_-]+)__(?:[A-Za-z0-9 \-_]*)$/);
+          const m = full.match(/__([A-Za-z0-9_\/\.\-]+)__(?:[A-Za-z0-9 \-_]*)$/);
           len = m ? m[0].length : 0;
         } else if (type === 'dict') {
           const m = full.match(/[A-Za-z0-9_-]{1,}$/);
@@ -600,7 +600,12 @@
           }
         }
 
-        document.execCommand('insertText', false, text + ', ');
+        const needsComma = !text.startsWith('__');      // 와일드카드 토큰이면 쉼표 생략
+        document.execCommand(
+          'insertText',
+          false,
+          needsComma ? `${text}, ` : text               // 공백도 불필요하면 그냥 text 만
+        );
         hide();
 
         if (type === 'token') {
