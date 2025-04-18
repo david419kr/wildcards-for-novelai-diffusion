@@ -23,8 +23,10 @@ const fileNameEditor = document.getElementById('file-name-editor');
 const fileContentEditor = document.getElementById('file-content-editor');
 const saveFileBtn = document.getElementById('save-file-btn');
 
+const SETTINGS_VISIBLE_KEY = 'settingsVisible';
 
 const LANG_KEY = 'lang';
+let lang = 'en'; // 기본 언어 설정 (영어)
 
 const translations = {
   en: {
@@ -91,27 +93,27 @@ const createFileBtn = document.getElementById('createFileBtn');
 createFileBtn.addEventListener('click', () => {
   let raw = folderInput.value.trim();
   let name = raw.replace(/\s+/g, '_').replace(/_+/g, '_');
-  
+
   if (!name) return alert('Input file name.');
-  
+
   chrome.storage.local.get('wildcards', data => {
     const map = data.wildcards || {};
-    
+
     // 파일 키 생성 (현재 폴더에 있으면 폴더명/파일명, 아니면 파일명)
     const key = currentFolder ? `${currentFolder}/${name}` : name;
-    
+
     // 이미 존재하는 파일인지 확인
     if (map[key]) {
       return alert(`File already exists: ${key}`);
     }
-    
+
     // 새 파일 생성 (내용은 빈 문자열로 시작)
     map[key] = '';
-    
+
     // 저장 후 화면 갱신
     chrome.storage.local.set({ wildcards: map }, () => {
       folderInput.value = '';
-      
+
       // 추가: 파일 생성 후 바로 에디터 모드로 전환
       enterEditMode(key, '');
     });
@@ -123,27 +125,27 @@ createFileBtnInFolder.addEventListener('click', () => {
   const input = document.getElementById('newFileNameInFolder')
   let raw = input.value.trim();
   let name = raw.replace(/\s+/g, '_').replace(/_+/g, '_');
-  
+
   if (!name) return alert('Input file name.');
-  
+
   chrome.storage.local.get('wildcards', data => {
     const map = data.wildcards || {};
-    
+
     // 파일 키 생성 (현재 폴더에 있으면 폴더명/파일명, 아니면 파일명)
     const key = currentFolder ? `${currentFolder}/${name}` : name;
-    
+
     // 이미 존재하는 파일인지 확인
     if (map[key]) {
       return alert(`File already exists: ${key}`);
     }
-    
+
     // 새 파일 생성 (내용은 빈 문자열로 시작)
     map[key] = '';
-    
+
     // 저장 후 화면 갱신
     chrome.storage.local.set({ wildcards: map }, () => {
       input.value = '';
-      
+
       // 추가: 파일 생성 후 바로 에디터 모드로 전환
       enterEditMode(key, '');
     });
@@ -269,29 +271,39 @@ fileInFolder.addEventListener('change', e => {
 
 // Render list function
 function refresh() {
-  chrome.storage.local.get(['wildcards', 'wildcardFolders'], d => {
+  chrome.storage.local.get(['wildcards', 'wildcardFolders', SETTINGS_VISIBLE_KEY], d => {
     const map = d.wildcards || {};
     const folders = d.wildcardFolders || [];
+    const isSettingsVisible = d[SETTINGS_VISIBLE_KEY] !== undefined ?
+      d[SETTINGS_VISIBLE_KEY] : true;
+    const settings = document.getElementById('settings');
     list.innerHTML = '';
+
+    console.log(translations[lang].settings)
 
     // Toggle root vs folder view
     if (currentFolder) {
       backBtn.style.display = 'inline-block';
       viewTitle.textContent = `Folder: ${currentFolder}`;
       rootContent.style.display = 'none';
+      settings.style.display = 'none';
       fileRoot.style.display = 'none';
       fileInFolder.style.display = 'inline-block';
       langToggle.style.display = 'none';
       fileCreateInFolder.style.display = 'block'; // Show file creation button in folder view
+      viewTitle.classList.add('inFolder');
     } else {
       backBtn.style.display = 'none';
-      viewTitle.textContent = 'Settings';
+      viewTitle.textContent = translations[lang].settings;
       rootContent.style.display = 'block';
+      settings.style.display = isSettingsVisible ? 'block' : 'none'; // 설정 표시 상태 적용
       fileRoot.style.display = 'inline-block';
       fileInFolder.style.display = 'none';
       langToggle.style.display = 'block';
       fileCreateInFolder.style.display = 'none'; // Hide file creation button in root view
+      viewTitle.classList.remove('inFolder');
     }
+    viewTitle.classList.toggle('collapsed', isSettingsVisible);
 
     // Delete all button
     // Delete all 버튼 (root vs folder 구분)
@@ -606,12 +618,12 @@ document.addEventListener('DOMContentLoaded', () => {
 function enterEditMode(key, content) {
   // 현재 편집 중인 파일 정보 저장
   currentEditingFile = { key: key };
-  
+
   // 파일명과 내용 설정
   const fileName = key.includes('/') ? key.split('/').pop() : key;
   fileNameEditor.value = fileName;
   fileContentEditor.value = content;
-  
+
   // 기존 UI 숨기기
   backBtn.style.display = 'none';
   viewTitle.style.display = 'none';
@@ -620,7 +632,7 @@ function enterEditMode(key, content) {
   langToggle.style.display = 'none';
   fileInFolder.style.display = 'none';
   fileCreateInFolder.style.display = 'none';
-  
+
   // 편집 UI 표시
   editorMode.style.display = 'block';
 }
@@ -630,7 +642,7 @@ function enterEditMode(key, content) {
 function exitEditMode() {
   // 편집 UI 숨기기
   editorMode.style.display = 'none';
-  
+
   // 기존 UI 복원
   if (currentFolder) {
     backBtn.style.display = 'inline-block';
@@ -647,10 +659,10 @@ function exitEditMode() {
     fileCreateInFolder.style.display = 'block';
   }
   list.style.display = 'block';
-  
+
   // 현재 편집 파일 정보 초기화
   currentEditingFile = null;
-  
+
   // 화면 갱신
   refresh();
 }
@@ -659,34 +671,34 @@ function exitEditMode() {
 // 파일 내용 저장 함수
 function saveFile() {
   if (!currentEditingFile) return;
-  
+
   chrome.storage.local.get('wildcards', data => {
     const map = data.wildcards || {};
-    
+
     // 파일명이 변경됐는지 확인
     const newFileName = fileNameEditor.value.trim().replace(/\s+/g, '_').replace(/_+/g, '_');
     if (!newFileName) return alert('Input File Name.');
-    
+
     let newKey;
     if (currentFolder) {
       newKey = `${currentFolder}/${newFileName}`;
     } else {
       newKey = newFileName;
     }
-    
+
     // 파일명이 변경됐고, 새 파일명이 이미 존재하는 경우
     if (newKey !== currentEditingFile.key && map[newKey]) {
       return alert(`File Already Exists: ${newKey}`);
     }
-    
+
     // 이전 파일 삭제 (파일명이 변경된 경우)
     if (newKey !== currentEditingFile.key) {
       delete map[currentEditingFile.key];
     }
-    
+
     // 새 내용 저장
     map[newKey] = fileContentEditor.value;
-    
+
     // 저장 후 일반 모드로 돌아가기
     chrome.storage.local.set({ wildcards: map }, exitEditMode);
   });
@@ -696,16 +708,18 @@ function saveFile() {
 document.addEventListener('DOMContentLoaded', () => {
   // 1) 저장된 언어 불러오기(없으면 en)
   chrome.storage.local.get(LANG_KEY, data => {
-    const lang = data[LANG_KEY] || 'en';
+    lang = data[LANG_KEY] || 'en';
     setLang(lang);
   });
 
   // 2) 버튼 클릭 시 저장 + 반영
   document.getElementById('btn-en').addEventListener('click', () => {
     chrome.storage.local.set({ [LANG_KEY]: 'en' }, () => setLang('en'));
+    lang = 'en'; // 언어 변수 업데이트
   });
   document.getElementById('btn-jp').addEventListener('click', () => {
     chrome.storage.local.set({ [LANG_KEY]: 'jp' }, () => setLang('jp'));
+    lang = 'jp'; // 언어 변수 업데이트
   });
 });
 
@@ -735,3 +749,14 @@ tabChk.addEventListener('change', () => { chrome.storage.local.set({ triggerTab:
 const spaceChk = document.getElementById('triggerSpace');
 chrome.storage.local.get('triggerSpace', d => { spaceChk.checked = !!d.triggerSpace; });
 spaceChk.addEventListener('change', () => { chrome.storage.local.set({ triggerSpace: spaceChk.checked }); });
+viewTitle.addEventListener('click', () => {
+  if (!currentFolder) {
+    const isVisible = settings.style.display !== 'none';
+    settings.style.display = isVisible ? 'none' : 'block';
+    chrome.storage.local.set({ [SETTINGS_VISIBLE_KEY]: !isVisible });
+
+    // 화살표 방향 변경을 위한 클래스 토글
+    // viewTitle.classList.toggle('collapsed', isVisible);
+  }
+  refresh();
+});

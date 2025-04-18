@@ -145,6 +145,27 @@
     #renameFolderBtn button {
       white-space: nowrap;
     }
+
+    #viewTitle {
+      cursor: pointer;
+      position: relative;
+    }
+
+    #viewTitle::after {
+      content: "▶";
+      font-size: 0.8em;
+      margin-left: 5px;
+      transition: transform 0.3s;
+      display: inline-block;
+    }
+
+    #viewTitle.collapsed::after {
+      transform: rotate(90deg);
+    }
+
+    #viewTitle.inFolder::after {
+      display: none;
+    }
   </style>
 </head>
 
@@ -161,30 +182,31 @@
   <!-- Root view content -->
   <div id="rootContent">
     <!-- Settings -->
-    <label style="font-size:0.85rem;">
-      <input type="checkbox" id="preservePrompt" checked>
-      <b id="preserveLabel" data-i18n-key="preserveLabel">Preserve Original img prompts on Enhance</b><br>
-      <span id="preserveDesc" data-i18n-key="preserveDesc">・Uncheck this to randomize enhance prompts.</span>
-    </label><br>
+    <div id="settings">
+      <label style="font-size:0.85rem;">
+        <input type="checkbox" id="preservePrompt" checked>
+        <b id="preserveLabel" data-i18n-key="preserveLabel">Preserve Original img prompts on Enhance</b><br>
+        <span id="preserveDesc" data-i18n-key="preserveDesc">・Uncheck this to randomize enhance prompts.</span>
+      </label><br>
 
-    <label style="font-size:0.85rem;">
-      <input type="checkbox" id="alternativeDanbooruAutocomplete">
-      <b id="alternativeLabel" data-i18n-key="alternativeLabel">Full Alternative Danbooru Autocomplete</b><br>
-      <span id="alternativeDesc" data-i18n-key="alternativeDesc">・a1111 WebUI style Danbooru Autocomplete.</span>
-    </label><br><br>
+      <label style="font-size:0.85rem;">
+        <input type="checkbox" id="alternativeDanbooruAutocomplete">
+        <b id="alternativeLabel" data-i18n-key="alternativeLabel">Full Alternative Danbooru Autocomplete</b><br>
+        <span id="alternativeDesc" data-i18n-key="alternativeDesc">・a1111 WebUI style Danbooru Autocomplete.</span>
+      </label><br><br>
 
-    <b id="triggerTitle" data-i18n-key="triggerTitle" style="font-size:0.9rem;">Autocomplete Trigger Keys</b><br>
-    <label style="font-size:0.85rem;">
-      <input type="checkbox" id="triggerSpace" checked>
-      <b id="spaceLabel" data-i18n-key="space">Space</b>: <span id="spaceDesc" data-i18n-key="spaceDesc">Works fine
-        along with NAI default.</span>
-    </label><br>
-    <label style="font-size:0.85rem;">
-      <input type="checkbox" id="triggerTab">
-      <b id="tabLabel" data-i18n-key="tab">Tab</b>: <span id="tabDesc" data-i18n-key="tabDesc">Use with "Disable Tag
-        Suggestions" ON.</span>
-    </label><br>
-
+      <b id="triggerTitle" data-i18n-key="triggerTitle" style="font-size:0.9rem;">Autocomplete Trigger Keys</b><br>
+      <label style="font-size:0.85rem;">
+        <input type="checkbox" id="triggerSpace" checked>
+        <b id="spaceLabel" data-i18n-key="space">Space</b>: <span id="spaceDesc" data-i18n-key="spaceDesc">Works fine
+          along with NAI default.</span>
+      </label><br>
+      <label style="font-size:0.85rem;">
+        <input type="checkbox" id="triggerTab">
+        <b id="tabLabel" data-i18n-key="tab">Tab</b>: <span id="tabDesc" data-i18n-key="tabDesc">Use with "Disable Tag
+          Suggestions" ON.</span>
+      </label><br>
+    </div>
     <!-- Root upload -->
     <h2 id="wildcardsTitle" data-i18n-key="wildcards">Wildcards</h2>
     <div id="folder-create">
