@@ -5,23 +5,120 @@
   <meta charset="utf-8">
   <title>Wildcards txt files</title>
   <style>
-    body { font-family: sans-serif; width: 320px; padding: 12px; }
-    ul { padding: 0; list-style: none; }
-    li { margin: 4px 0; }
-    .folder-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-weight: bold; color: blue; transition: box-shadow 0.2s ease-in-out; }
-    .folder-header.active { box-shadow: 0 0 8px 3px rgba(255, 152, 0, 0.8); animation: pulse 1s infinite alternate; }
-    .file-item { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; word-break: break-all; }
-    .file-item.selected { background: #d0eaff; }
-    button { margin-left: 8px; }
-    select { margin-left: 8px; }
-    .folder-list { padding-left: 12px; display: none; }
-    .folder-header.drop-target { background-color: #e0f7fa; border: 2px dashed #00acc1; }
-    #backBtn { transition: box-shadow 0.2s ease-in-out; }
-    #backBtn.active { box-shadow: 0 0 8px 3px rgba(255, 152, 0, 0.8); animation: pulse 1s infinite alternate; }
-    #backBtn.drop-target { background-color: #fff3e0; border: 2px dashed #fb8c00; }
-    @keyframes pulse { from { box-shadow: 0 0 8px 3px rgba(255, 152, 0, 0.8); } to { box-shadow: 0 0 16px 6px rgba(255, 152, 0, 0.8); } }
-    #langToggle { text-align: right; margin-bottom: 8px; }
-    #langToggle button { margin: 0 4px; padding: 2px 6px; }
+    body {
+      font-family: sans-serif;
+      width: 320px;
+      padding: 12px;
+    }
+
+    ul {
+      padding: 0;
+      list-style: none;
+    }
+
+    li {
+      margin: 4px 0;
+    }
+
+    .folder-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      font-weight: bold;
+      color: blue;
+      transition: box-shadow 0.2s ease-in-out;
+    }
+
+    .folder-header.active {
+      box-shadow: 0 0 8px 3px rgba(255, 152, 0, 0.8);
+      animation: pulse 1s infinite alternate;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      word-break: break-all;
+    }
+
+    .file-item.selected {
+      background: #d0eaff;
+    }
+
+    button {
+      margin-left: 8px;
+    }
+
+    select {
+      margin-left: 8px;
+    }
+
+    .folder-list {
+      padding-left: 12px;
+      display: none;
+    }
+
+    .folder-header.drop-target {
+      background-color: #e0f7fa;
+      border: 2px dashed #00acc1;
+    }
+
+    #backBtn {
+      transition: box-shadow 0.2s ease-in-out;
+    }
+
+    #backBtn.active {
+      box-shadow: 0 0 8px 3px rgba(255, 152, 0, 0.8);
+      animation: pulse 1s infinite alternate;
+    }
+
+    #backBtn.drop-target {
+      background-color: #fff3e0;
+      border: 2px dashed #fb8c00;
+    }
+
+    @keyframes pulse {
+      from {
+        box-shadow: 0 0 8px 3px rgba(255, 152, 0, 0.8);
+      }
+
+      to {
+        box-shadow: 0 0 16px 6px rgba(255, 152, 0, 0.8);
+      }
+    }
+
+    #langToggle {
+      text-align: right;
+      margin-bottom: 8px;
+    }
+
+    #langToggle button {
+      margin: 0 4px;
+      padding: 2px 6px;
+    }
+
+    li.file-item {
+      position: relative;
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    li.file-item:hover {
+      box-shadow: 0 0 0 2px rgba(0, 172, 193, 0.8);
+      cursor: pointer;
+    }
+
+    .folder-header {
+      position: relative;
+      transition: box-shadow 0.2s ease, background-color 0.2s ease;
+    }
+
+    .folder-header:hover {
+      box-shadow: 0 0 0 2px rgba(0, 172, 193, 0.8);
+      background-color: rgba(0, 172, 193, 0.1);
+      cursor: pointer;
+    }
   </style>
 </head>
 
@@ -63,11 +160,13 @@
     <b id="triggerTitle" data-i18n-key="triggerTitle" style="font-size:0.9rem;">Autocomplete Trigger Keys</b><br>
     <label style="font-size:0.85rem;">
       <input type="checkbox" id="triggerSpace" checked>
-      <b id="spaceLabel" data-i18n-key="space">Space</b>: <span id="spaceDesc" data-i18n-key="spaceDesc">Works fine along with NAI default.</span>
+      <b id="spaceLabel" data-i18n-key="space">Space</b>: <span id="spaceDesc" data-i18n-key="spaceDesc">Works fine
+        along with NAI default.</span>
     </label><br>
     <label style="font-size:0.85rem;">
       <input type="checkbox" id="triggerTab">
-      <b id="tabLabel" data-i18n-key="tab">Tab</b>: <span id="tabDesc" data-i18n-key="tabDesc">Use with "Disable Tag Suggestions" ON.</span>
+      <b id="tabLabel" data-i18n-key="tab">Tab</b>: <span id="tabDesc" data-i18n-key="tabDesc">Use with "Disable Tag
+        Suggestions" ON.</span>
     </label><br>
 
     <!-- Root upload -->
