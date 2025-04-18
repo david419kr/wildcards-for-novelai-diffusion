@@ -404,7 +404,7 @@
       function update() {
         const txt = textBeforeCaret();
 
-        let m = txt.match(/__([A-Za-z0-9_-]+)__(?:([A-Za-z0-9 \-_]*))$/);
+        let m = txt.match(/__([A-Za-z0-9_\/\.\-]+)__(?:([A-Za-z0-9 \-_]*))$/);
         if (m && dict[m[1]]) {
           const fileKey = m[1];
           const part = (m[2] || '').toLowerCase();
