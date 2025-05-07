@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Wildcards and Danbooru Autocomplete for NovelAI Diffusion",
   "description": "swap __wildcards__ prompts to .txt file content + Alternative prompt autocomplete",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "permissions": ["storage"],
   "host_permissions": ["https://image.novelai.net/*"],
   "content_scripts": [

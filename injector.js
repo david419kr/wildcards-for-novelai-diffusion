@@ -122,9 +122,7 @@
       }
 
       /* 3) v4‑prompt 계열 세팅 */
-      if (json.model === 'nai-diffusion-4-full' ||
-        json.model === 'nai-diffusion-4-curated-preview') {
-
+      if (json.model.startsWith('nai-diffusion-4')) {
         json.parameters.v4_prompt = {
           caption: v4Prompt?.caption
             ?? { base_caption: pngMeta.prompt, char_captions: [] },
