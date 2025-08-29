@@ -140,85 +140,117 @@
     } catch (err) {
       console.error('[Wildcard] img2img metadata 처리 오류:', err);
     }
-  }                                                   // <<< NEW
-
-  /******** 1. swap logic ********/
-  function swap(txt) {
-    // 1. __ 토큰 처리
-    let result = txt.replace(/__([A-Za-z0-9_\/\.\-]+)__/g, (match, name) => {
-      // 1-1. 정확히 매칭되는 키가 있는지
-      let raw = dict[name];
-  
-      // 1-2. 없으면, name에 슬래시가 없을 때 폴더 구조 중에서 파일명만 같은 키를 찾아서 대체
-      if (!raw && !name.includes('/')) {
-        const fallbackKey = Object.keys(dict)
-          .find(k => k.split('/').pop() === name);
-        if (fallbackKey) raw = dict[fallbackKey];
-      }
-  
-      // 1-3. 여전히 raw가 없으면 치환 안 함
-      if (!raw) return match;
-
-      // 이스케이프 문자 복원
-      raw = raw.replace(/\\\(/g, '(').replace(/\\\)/g, ')');
-      const lines = raw.split(/\r?\n/).filter(Boolean);
-      if (!lines.length) return match;
-
-      // 파일의 각 줄 중 하나라도 다른 wildcard 문법이 남아 있으면 강제로 V3 모드 적용
-      const forceV3 = lines.some(line => containsWildcardSyntax(line));
-      const effectiveV3 = forceV3 || v3;
-
-      if (effectiveV3) {
-        // 랜덤으로 한 줄 선택 (한 번만 치환)
-        return lines[Math.floor(Math.random() * lines.length)];
-      } else {
-        // V3 모드가 아니라면 전체 라인을 파이프(|)로 연결한 후 ||...|| 형태로 반환
-        return `||${lines.join('|')}||`;
-      }
-    });
-
-    // 2. {text1|text2|text3} 문법 처리
-    result = result.replace(/{([^|{}]+(?:\|[^|{}]+)+)}/g, (match, group) => {
-      const opts = group.split('|');
-      return opts[Math.floor(Math.random() * opts.length)];
-    });
-
-    // 3. ||text1|text2|text3|| 문법 처리
-    result = result.replace(/\|\|((?:[^|]+\|)+[^|]+)\|\|/g, (match, group) => {
-      const opts = group.split('|');
-      return opts[Math.floor(Math.random() * opts.length)];
-    });
-
-    return result;
   }
 
-  function recursiveSwap(txt) {
-    let current = txt;
-    let iteration = 0;
-    // 최대 100회 반복하여 무한 루프 방지
-    while (containsWildcardSyntax(current) && iteration < 100) {
-      const next = swap(current);
-      // 더 이상 변화가 없으면 중단
-      if (next === current) break;
-      current = next;
-      iteration++;
+
+  // === Seeded RNG helpers ===
+
+  // Simple, fast, seedable PRNG: mulberry32
+  // Ref: https://stackoverflow.com/a/47593316 , https://github.com/cprosche/mulberry32
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // Extract a 32-bit seed from request JSON, or return null if unavailable.
+  function getSeed32(json) {
+    const s = json?.parameters?.seed;
+    if (typeof s === 'number' && isFinite(s)) return (s >>> 0);
+    if (typeof s === 'string' && s.trim() !== '') {
+      const n = Number.parseInt(s, 10);
+      if (Number.isFinite(n)) return (n >>> 0);
     }
-    return current;
+    return null; // fall back to Math.random
   }
 
-  const deepSwap = o => {
-    if (typeof o === 'string') return recursiveSwap(o);
-    if (Array.isArray(o)) return o.map(deepSwap);
-    if (o && typeof o === 'object') {
-      for (const k in o) {
-        o[k] = deepSwap(o[k]);
-        if (k === 'char_captions' && Array.isArray(o[k]) && o[k].length > 6)
-          o[k] = o[k].slice(0, 6);
+
+
+  /******** 1. swap logic (now rng based on NAI seed) ********/
+  function makeDeepSwap(rng) {
+    const curlyPattern = /{(?:[^|{}]+\|)+[^|{}]+}/;
+    const doublePipePattern = /\|\|(?:[^|]+\|)+[^|]+\|\|/;
+    const simpleWildcardPattern = /__([A-Za-z0-9_\/\.\-]+)__/;
+
+    function containsWildcardSyntax(text) {
+      return simpleWildcardPattern.test(text) ||
+        curlyPattern.test(text) ||
+        doublePipePattern.test(text);
+    }
+
+    function swap(txt) {
+      // 1) __token__ lines → pick one line deterministically using rng()
+      let result = txt.replace(/__([A-Za-z0-9_\/\.\-]+)__/g, (match, name) => {
+        let raw = dict[name];
+        if (!raw && !name.includes('/')) {
+          const fallbackKey = Object.keys(dict).find(k => k.split('/').pop() === name);
+          if (fallbackKey) raw = dict[fallbackKey];
+        }
+        if (!raw) return match;
+
+        raw = raw.replace(/\\\(/g, '(').replace(/\\\)/g, ')');
+        const lines = raw.split(/\r?\n/).filter(Boolean);
+        if (!lines.length) return match;
+
+        const forceV3 = lines.some(line => containsWildcardSyntax(line));
+        const effectiveV3 = forceV3 || v3;
+
+        if (effectiveV3) {
+          // deterministic pick
+          return lines[Math.floor(rng() * lines.length)];
+        } else {
+          // keep as NovelAI dynamic syntax
+          return `||${lines.join('|')}||`;
+        }
+      });
+
+      // 2) {a|b|c} deterministic pick
+      result = result.replace(/{([^|{}]+(?:\|[^|{}]+)+)}/g, (m, group) => {
+        const opts = group.split('|');
+        return opts[Math.floor(rng() * opts.length)];
+      });
+
+      // 3) ||a|b|| deterministic pick
+      result = result.replace(/\|\|((?:[^|]+\|)+[^|]+)\|\|/g, (m, group) => {
+        const opts = group.split('|');
+        return opts[Math.floor(rng() * opts.length)];
+      });
+
+      return result;
+    }
+
+    function recursiveSwap(txt) {
+      let current = txt;
+      let iteration = 0;
+      while (containsWildcardSyntax(current) && iteration < 100) {
+        const next = swap(current);
+        if (next === current) break;
+        current = next;
+        iteration++;
+      }
+      return current;
+    }
+
+    const deepSwap = o => {
+      if (typeof o === 'string') return recursiveSwap(o);
+      if (Array.isArray(o)) return o.map(deepSwap);
+      if (o && typeof o === 'object') {
+        for (const k in o) {
+          o[k] = deepSwap(o[k]);
+          if (k === 'char_captions' && Array.isArray(o[k]) && o[k].length > 6) {
+            o[k] = o[k].slice(0, 6);
+          }
+        }
+        return o;
       }
       return o;
-    }
-    return o;
-  };
+    };
+
+    return deepSwap;
+  }
 
   /* 2‑A. fetch 패치 */
   const $fetch = window.fetch.bind(window);
@@ -232,6 +264,10 @@
           const txt = typeof body === 'string' ? body
             : await new Response(body).text();
           let json = JSON.parse(txt);
+
+          const seed32 = getSeed32(json);
+          const rng = (seed32 != null) ? mulberry32(seed32) : Math.random;
+          const deepSwap = makeDeepSwap(rng);
 
           /* ① wildcard 치환 */
           json = deepSwap(json);
@@ -431,7 +467,7 @@
             render(folderKeys.map(k => ({ type: 'token', text: `__${k}__` })));
             return;
           }
-          
+
           const keys = allKeys.filter(k => k.toLowerCase().includes(prefix))
             .sort();
           if (keys.length) {
