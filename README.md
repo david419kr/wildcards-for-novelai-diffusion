@@ -2,6 +2,13 @@
 
 > **Turn `__wildcards__` into `||text|some more text|some more random text||` automatically—before your prompt ever reaches NovelAI.**
 
+- Can be installed on [chrome web store](https://chromewebstore.google.com/detail/wildcards-and-danbooru-au/ecfhpcpddnambbmgkpkoojolldpfaimd).(might have few days lag of newest feature)  
+- Now the wildcard selection is based on NAI seed.(same seed, same wildcard chosen)  
+- You can now create and edit wildcards on extension popup menu.  
+- You can now also use lighweight, faster, a1111 webui style Danbooru tag autocomplete, instead of NAI's default tag suggestions.  
+- Now support folder sturcture.  
+- Japanese/English Language selectable.  
+
 A lightweight, privacy‑friendly Chrome extension that intercepts **`POST https://image.novelai.net/ai/generate-image`** and expands any `__wildcard__` tokens inside the request body using text files you upload.  
 Works like a1111 webui's wildcards extension, and the wildcards txt files for a1111 webui can be used, untouched.
 
@@ -27,11 +34,11 @@ Works like a1111 webui's wildcards extension, and the wildcards txt files for a1
 
 ## How to install
 **1. Prepare the Files**  
-[Download the ZIP](https://github.com/david419kr/wildcards-for-novelai-diffusion/archive/refs/heads/main.zip) and extract the archive.  
+[Download the ZIP](https://github.com/david419kr/wildcards-for-novelai-diffusion/archive/refs/heads/full_autocomplete_experimental.zip) and extract the archive.  
 A folder named something like "wildcards-for-novelai-diffusion-main" will appear.  
 Tip: Make sure manifest.json is visible directly inside this folder—not nested in another sub‑folder.  
 
-[ZIPをDL](https://github.com/david419kr/wildcards-for-novelai-diffusion/archive/refs/heads/main.zip)して、解凍してください。  
+[ZIPをDL](https://github.com/david419kr/wildcards-for-novelai-diffusion/archive/refs/heads/full_autocomplete_experimental.zip)して、解凍してください。  
 wildcards-for-novelai-diffusion-mainという風にフォルダーが生成されるはずです。  
 フォルダーを開けてすぐ、manifest.jsonが見える状態であることを確認してください。（フォルダーの中にまたサブフォルダーがある状態ではないこと）  
 
@@ -53,3 +60,4 @@ Just make sure you refresh novelai.net page before first using the extension, if
 これで準備OKです！  
 拡張機能のアイコンをクリックしてWildcardsのtxtファイルを管理できます。  
 拡張機能を入れてから初回起動時のみ、念のためNAIのページを一回リロードしてから使ってください。
+
