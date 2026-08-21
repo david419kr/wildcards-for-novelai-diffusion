@@ -33,8 +33,8 @@ const translations = {
     settings: "Settings",
     preserveLabel: "Preserve Original img prompts on Enhance",
     preserveDesc: "・Uncheck this to randomize enhance prompts.",
-    alternativeLabel: "Full Alternative Danbooru Autocomplete",
-    alternativeDesc: "・a1111 WebUI style Danbooru Autocomplete.",
+    danbooruLabel: "Use Danbooru AutoComplete",
+    e621Label: "Use E621 AutoComplete",
     triggerTitle: "Autocomplete Trigger Keys",
     space: "Space",
     spaceDesc: "Works fine along with NAI default.",
@@ -46,8 +46,8 @@ const translations = {
     settings: "設定",
     preserveLabel: "品質向上時、画像の元々のプロンプトを使う",
     preserveDesc: "・品質向上時もランダマイズしたい場合は解除",
-    alternativeLabel: "カスタム入力候補予測（軽量）を使う",
-    alternativeDesc: "・WebUiスタイルのDanbooruタグ予測変換",
+    danbooruLabel: "Danbooru AutoCompleteを使用",
+    e621Label: "E621 AutoCompleteを使用",
     triggerTitle: "予測変換のトリガーキー",
     space: "Space",
     spaceDesc: "NAIの基本動作と衝突せず動作します。",
@@ -740,9 +740,24 @@ fileContentEditor.addEventListener('keydown', e => {
 const preserveChk = document.getElementById('preservePrompt');
 chrome.storage.local.get('preservePrompt', d => { preserveChk.checked = !!d.preservePrompt; });
 preserveChk.addEventListener('change', () => { chrome.storage.local.set({ preservePrompt: preserveChk.checked }); });
-const autoCompleteChk = document.getElementById('alternativeDanbooruAutocomplete');
-chrome.storage.local.get('alternativeDanbooruAutocomplete', d => { autoCompleteChk.checked = !!d.alternativeDanbooruAutocomplete; });
-autoCompleteChk.addEventListener('change', () => { chrome.storage.local.set({ alternativeDanbooruAutocomplete: autoCompleteChk.checked }); });
+const danbooruChk = document.getElementById('useDanbooruAutocomplete');
+const e621Chk = document.getElementById('useE621Autocomplete');
+chrome.storage.local.get([
+  'useDanbooruAutocomplete',
+  'useE621Autocomplete',
+  'alternativeDanbooruAutocomplete'
+], data => {
+  danbooruChk.checked = data.useDanbooruAutocomplete
+    ?? data.alternativeDanbooruAutocomplete
+    ?? true;
+  e621Chk.checked = data.useE621Autocomplete ?? false;
+});
+danbooruChk.addEventListener('change', () => {
+  chrome.storage.local.set({ useDanbooruAutocomplete: danbooruChk.checked });
+});
+e621Chk.addEventListener('change', () => {
+  chrome.storage.local.set({ useE621Autocomplete: e621Chk.checked });
+});
 const tabChk = document.getElementById('triggerTab');
 chrome.storage.local.get('triggerTab', d => { tabChk.checked = !!d.triggerTab; });
 tabChk.addEventListener('change', () => { chrome.storage.local.set({ triggerTab: tabChk.checked }); });

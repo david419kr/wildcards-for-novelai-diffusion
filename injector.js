@@ -15,7 +15,8 @@
   let dict = {};
   let v3 = false;
   let preservePrompt = true;
-  let alternativeDanbooruAutocomplete = true;
+  let useDanbooruAutocomplete = true;
+  let useE621Autocomplete = false;
   let triggerTab = false;
   let triggerSpace = false;
 
@@ -454,7 +455,18 @@
   let autocompleteDict = [];
   window.addEventListener('message', e => {
     if (e.source !== window) return;
-    const { type, map, v3: newV3, preservePrompt: newPreserve, alternativeDanbooruAutocomplete: newAlt, triggerTab: newTab, triggerSpace: newSpace, data } = e.data || {};
+    const {
+      type,
+      map,
+      v3: newV3,
+      preservePrompt: newPreserve,
+      useDanbooruAutocomplete: newDanbooru,
+      useE621Autocomplete: newE621,
+      triggerTab: newTab,
+      triggerSpace: newSpace,
+      data,
+      sources
+    } = e.data || {};
 
     // 옵션 초기화 및 업데이트 처리
     if (type === '__WILDCARD_INIT__' || type === '__WILDCARD_UPDATE__') {
@@ -463,22 +475,25 @@
       preservePrompt = !!newPreserve;
       triggerTab = !!newTab;
       triggerSpace = !!newSpace;
+      useDanbooruAutocomplete = !!newDanbooru;
+      useE621Autocomplete = !!newE621;
+      autocompleteDict = [];
 
-      // alternativeDanbooruAutocomplete 토글 즉시 반영
-      if (typeof newAlt !== 'undefined') {
-        alternativeDanbooruAutocomplete = !!newAlt;
-        if (alternativeDanbooruAutocomplete) {
-          // 켜졌을 때 사전 재요청
-          window.postMessage({ type: '__REQUEST_AUTOCOMPLETE_DICT__' }, '*');
-        } else {
-          // 꺼졌을 때 기존 사전 초기화
-          autocompleteDict = [];
-        }
+      if (useDanbooruAutocomplete || useE621Autocomplete) {
+        window.postMessage({
+          type: '__REQUEST_AUTOCOMPLETE_DICT__',
+          useDanbooruAutocomplete,
+          useE621Autocomplete
+        }, '*');
+      } else {
+        document.querySelectorAll('.wildcard-suggest')
+          .forEach(list => { list.style.display = 'none'; });
       }
     }
     // 실제 사전 데이터 수신
     else if (type === '__AUTOCOMPLETE_DICT__') {
-      if (alternativeDanbooruAutocomplete) {
+      if (sources?.danbooru === useDanbooruAutocomplete &&
+        sources?.e621 === useE621Autocomplete) {
         autocompleteDict = data || [];
       }
     }

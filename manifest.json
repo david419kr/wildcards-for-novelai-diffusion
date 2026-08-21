@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Wildcards and Danbooru Autocomplete for NovelAI Diffusion",
-  "description": "swap __wildcards__ prompts to .txt file content + Alternative prompt autocomplete",
-  "version": "3.0.5",
+  "name": "Wildcards and Booru Autocomplete for NovelAI Diffusion",
+  "description": "Wildcard prompts with optional Danbooru and E621 autocomplete dictionaries.",
+  "version": "3.1.0",
   "permissions": ["storage"],
   "host_permissions": ["https://image.novelai.net/*"],
   "content_scripts": [
@@ -14,7 +14,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["injector.js", "dictionary.csv"],
+      "resources": ["injector.js", "dictionary.csv", "dictionary-e621.csv"],
       "matches": ["<all_urls>"]
     }
   ],
