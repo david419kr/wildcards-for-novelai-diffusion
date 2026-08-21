@@ -121,8 +121,9 @@
         }
       }
 
-      /* 3) v4‑prompt 계열 세팅 */
-      if (json.model.startsWith('nai-diffusion-4')) {
+      /* 3) 구조화 prompt 계열 세팅 */
+      if (json.model.startsWith('nai-diffusion-4') ||
+        json.model.startsWith('nai-diffusion-5')) {
         json.parameters.v4_prompt = {
           caption: v4Prompt?.caption
             ?? { base_caption: pngMeta.prompt, char_captions: [] },
@@ -158,7 +159,7 @@
 
   // Extract a 32-bit seed from request JSON, or return null if unavailable.
   function getSeed32(json) {
-    const s = json?.parameters?.seed;
+    const s = json?.parameters?.seed ?? json?.seed;
     if (typeof s === 'number' && isFinite(s)) return (s >>> 0);
     if (typeof s === 'string' && s.trim() !== '') {
       const n = Number.parseInt(s, 10);
@@ -252,6 +253,81 @@
     return deepSwap;
   }
 
+  async function rewriteJson(json, deepSwap) {
+    json = deepSwap(json);
+
+    if (preservePrompt) await applyImg2ImgMetadata(json);
+
+    if (json?.parameters?.v4_prompt?.caption &&
+      typeof json.parameters.v4_prompt.caption.base_caption !== 'undefined' &&
+      typeof json.input === 'string') {
+      json.parameters.v4_prompt.caption.base_caption = json.input;
+    }
+
+    return json;
+  }
+
+  async function rewriteFormData(body) {
+    const entries = [...body.entries()];
+    const parts = [];
+    let seed32 = null;
+
+    for (const [key, value] of entries) {
+      let json;
+      let isJson = false;
+
+      if (typeof value === 'string') {
+        try {
+          json = JSON.parse(value);
+          isJson = true;
+        } catch { }
+      } else if (value instanceof Blob &&
+        (value.type.includes('json') || /params|parameters|payload|request/i.test(key))) {
+        try {
+          json = JSON.parse(await value.text());
+          isJson = true;
+        } catch { }
+      }
+
+      parts.push({ key, value, json, isJson });
+
+      if (typeof value === 'string' && key.toLowerCase() === 'seed') {
+        seed32 = getSeed32({ seed: value });
+      }
+
+      if (isJson) seed32 ??= getSeed32(json);
+    }
+
+    console.debug('[Wildcard] FormData parts', parts.map(({ key, value, isJson }) => ({
+      key,
+      type: typeof value === 'string' ? 'string' : value.type,
+      size: typeof value === 'string' ? value.length : value.size,
+      isJson
+    })));
+
+    const deepSwap = makeDeepSwap(seed32 != null ? mulberry32(seed32) : Math.random);
+    const rewritten = new FormData();
+
+    for (const { key, value, json, isJson } of parts) {
+      if (isJson) {
+        const text = JSON.stringify(await rewriteJson(json, deepSwap));
+        if (value instanceof Blob) {
+          const blob = new Blob([text], { type: value.type || 'application/json' });
+          if (value instanceof File) rewritten.append(key, blob, value.name);
+          else rewritten.append(key, blob);
+        } else {
+          rewritten.append(key, text);
+        }
+      } else if (typeof value === 'string') {
+        rewritten.append(key, deepSwap(value));
+      } else {
+        rewritten.append(key, value);
+      }
+    }
+
+    return rewritten;
+  }
+
   /* 2‑A. fetch 패치 */
   const $fetch = window.fetch.bind(window);
   window.fetch = async (input, init = {}) => {
@@ -261,32 +337,34 @@
       if (m === 'POST' && url.startsWith(TARGET)) {
         let body = init.body || (input instanceof Request ? input.body : null);
         if (body) {
-          const txt = typeof body === 'string' ? body
-            : await new Response(body).text();
-          let json = JSON.parse(txt);
-
-          const seed32 = getSeed32(json);
-          const rng = (seed32 != null) ? mulberry32(seed32) : Math.random;
-          const deepSwap = makeDeepSwap(rng);
-
-          /* ① wildcard 치환 */
-          json = deepSwap(json);
-
-          /* ② img2img 메타데이터 반영 */      // <<< NEW
-          if (preservePrompt) await applyImg2ImgMetadata(json);            // <<< NEW
-
-          /* ③ cosmetic: base_caption = input */
-          if (json?.parameters?.v4_prompt?.caption &&
-            typeof json.parameters.v4_prompt.caption.base_caption !== 'undefined' &&
-            typeof json.input === 'string') {
-            json.parameters.v4_prompt.caption.base_caption = json.input;
+          let newBody;
+          if (body instanceof FormData) {
+            newBody = await rewriteFormData(body);
+          } else {
+            const txt = typeof body === 'string' ? body
+              : await new Response(body).text();
+            let json = JSON.parse(txt);
+            const seed32 = getSeed32(json);
+            const deepSwap = makeDeepSwap(seed32 != null ? mulberry32(seed32) : Math.random);
+            json = await rewriteJson(json, deepSwap);
+            newBody = JSON.stringify(json);
           }
 
-          const newBody = JSON.stringify(json);
           if (typeof input === 'string') {
-            init = { ...init, body: newBody };
+            if (newBody instanceof FormData) {
+              const headers = new Headers(init.headers);
+              headers.delete('content-type');
+              init = { ...init, headers, body: newBody };
+            } else {
+              init = { ...init, body: newBody };
+            }
           } else {
-            input = new Request(input, { body: newBody });
+            const requestInit = { body: newBody };
+            if (newBody instanceof FormData) {
+              requestInit.headers = new Headers(input.headers);
+              requestInit.headers.delete('content-type');
+            }
+            input = new Request(input, requestInit);
           }
         }
       }
