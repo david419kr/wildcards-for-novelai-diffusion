@@ -36,7 +36,7 @@
   }
 
   /* -------------------------------------------------
-   * 0. PNG 메타데이터 유틸 ────────────────────── */   // <<< NEW
+   * 0. PNG/WebP 메타데이터 유틸 ──────────────── */   // <<< NEW
   function extractPngMetadata(arrayBuffer) {
     const dv = new DataView(arrayBuffer);
     const sig = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
@@ -78,6 +78,70 @@
     return meta;
   }                                                   // <<< NEW
 
+  function extractWebpMetadata(arrayBuffer) {
+    const bytes = new Uint8Array(arrayBuffer);
+    const dv = new DataView(arrayBuffer);
+    const fourCC = off => String.fromCharCode(...bytes.subarray(off, off + 4));
+    if (bytes.length < 12 || fourCC(0) !== 'RIFF' || fourCC(8) !== 'WEBP') {
+      throw new Error('Invalid WebP file.');
+    }
+
+    let off = 12;
+    while (off + 8 <= bytes.length) {
+      const type = fourCC(off);
+      const len = dv.getUint32(off + 4, true);
+      const start = off + 8;
+      const end = start + len;
+      if (end > bytes.length) break;
+      if (type === 'EXIF') return extractExifMetadata(bytes.subarray(start, end));
+      off = end + (len & 1);
+    }
+    throw new Error('No WebP metadata.');
+  }
+
+  function extractExifMetadata(bytes) {
+    if (new TextDecoder('ascii').decode(bytes.subarray(0, 6)) === 'Exif\0\0') bytes = bytes.subarray(6);
+    const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const byteOrder = String.fromCharCode(bytes[0], bytes[1]);
+    if (byteOrder !== 'II' && byteOrder !== 'MM') throw new Error('Invalid WebP EXIF data.');
+    const littleEndian = byteOrder === 'II';
+    const get16 = off => dv.getUint16(off, littleEndian);
+    const get32 = off => dv.getUint32(off, littleEndian);
+    if (get16(2) !== 42) throw new Error('Invalid WebP EXIF data.');
+
+    const findTag = (ifdOffset, wantedTag) => {
+      const count = get16(ifdOffset);
+      for (let i = 0; i < count; i++) {
+        const entry = ifdOffset + 2 + i * 12;
+        if (get16(entry) === wantedTag) return entry;
+      }
+      return -1;
+    };
+
+    const exifPointer = findTag(get32(4), 0x8769);
+    if (exifPointer < 0) throw new Error('No WebP metadata.');
+    const userComment = findTag(get32(exifPointer + 8), 0x9286);
+    if (userComment < 0) throw new Error('No WebP metadata.');
+
+    const len = get32(userComment + 4);
+    const start = len <= 4 ? userComment + 8 : get32(userComment + 8);
+    if (start + len > bytes.length) throw new Error('Invalid WebP EXIF data.');
+    let data = bytes.subarray(start, start + len);
+    if (new TextDecoder('ascii').decode(data.subarray(0, 8)) === 'ASCII\0\0\0') data = data.subarray(8);
+    return JSON.parse(new TextDecoder('utf-8').decode(data).replace(/\0+$/, ''));
+  }
+
+  function extractImageMetadata(arrayBuffer) {
+    const bytes = new Uint8Array(arrayBuffer);
+    if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
+      return extractPngMetadata(arrayBuffer);
+    }
+    if (bytes.length >= 12 && String.fromCharCode(...bytes.subarray(0, 4)) === 'RIFF') {
+      return extractWebpMetadata(arrayBuffer);
+    }
+    throw new Error('Unsupported image format.');
+  }
+
   let displayedImageSrc = null;
   let displayedImageMetadataPromise = null;
   let displayedImageCacheTimer = null;
@@ -114,7 +178,7 @@
     displayedImageMetadataPromise = (async () => {
       await img.decode().catch(() => { });
       const ab = await (await fetch(src)).arrayBuffer();
-      const raw = extractPngMetadata(ab);
+      const raw = extractImageMetadata(ab);
       if (!raw.Comment) return null;
       return { src, pngMeta: JSON.parse(raw.Comment) };
     })().catch(() => null);
