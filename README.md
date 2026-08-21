@@ -1,4 +1,4 @@
-﻿# Wildcards for NovelAI Diffusion 4.0
+﻿# Wildcards for NovelAI Diffusion 5.0
 
 > **Turn `__wildcards__` into `||text|some more text|some more random text||` automatically—before your prompt ever reaches NovelAI.**
 
@@ -46,7 +46,7 @@ wildcards-for-novelai-diffusion-mainという風にフォルダーが生成さ�
 In the address bar, type chrome://extensions and press Enter. 
 Toggle Developer mode (top‑right corner) to ON.  
 Load the unpacked extension above.  
-You should now see “Wildcards for NovelAI Diffusion 4.0” in the list, with a toggle switch on.  
+You should now see “Wildcards for NovelAI Diffusion 5.0” in the list, with a toggle switch on.  
 
 Chromeのアドレスバーに、chrome://extensionsと入力し、拡張機能設定に入ります。  
 右上のデベロッパーモードをONにします。  
