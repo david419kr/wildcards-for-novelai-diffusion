@@ -7,7 +7,7 @@
     preservePrompt = true,
     alternativeDanbooruAutocomplete = true,
     triggerTab = false,
-    triggerSpace = true
+    triggerSpace = false
   } = await chrome.storage.local.get(['wildcards', 'v3mode', 'preservePrompt', 'alternativeDanbooruAutocomplete', 'triggerTab', 'triggerSpace']);
 
   // 2) inject script to page

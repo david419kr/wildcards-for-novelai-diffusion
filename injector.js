@@ -17,7 +17,7 @@
   let preservePrompt = true;
   let alternativeDanbooruAutocomplete = true;
   let triggerTab = false;
-  let triggerSpace = true;
+  let triggerSpace = false;
 
   function waitForElement(selector) {
     return new Promise(resolve => {
@@ -77,27 +77,76 @@
     return meta;
   }                                                   // <<< NEW
 
+  let displayedImageSrc = null;
+  let displayedImageMetadataPromise = null;
+  let displayedImageCacheTimer = null;
+
+  function findDisplayedImage() {
+    let bestImage = null;
+    let bestArea = 0;
+
+    document.querySelectorAll('.image-gen-canvas img.image-grid-image').forEach(img => {
+      if (!img.complete || !img.naturalWidth) return;
+
+      const style = getComputedStyle(img);
+      if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return;
+
+      const rect = img.getBoundingClientRect();
+      const width = Math.max(0, Math.min(rect.right, window.innerWidth) - Math.max(rect.left, 0));
+      const height = Math.max(0, Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0));
+      const area = width * height;
+      if (area > bestArea) {
+        bestArea = area;
+        bestImage = img;
+      }
+    });
+
+    return bestImage;
+  }
+
+  function cacheDisplayedImageMetadata() {
+    const img = findDisplayedImage();
+    const src = img?.currentSrc || img?.src;
+    if (!src || src === displayedImageSrc) return displayedImageMetadataPromise;
+
+    displayedImageSrc = src;
+    displayedImageMetadataPromise = (async () => {
+      await img.decode().catch(() => { });
+      const ab = await (await fetch(src)).arrayBuffer();
+      const raw = extractPngMetadata(ab);
+      if (!raw.Comment) return null;
+      return { src, pngMeta: JSON.parse(raw.Comment) };
+    })().catch(() => null);
+
+    return displayedImageMetadataPromise;
+  }
+
+  function scheduleDisplayedImageCache() {
+    clearTimeout(displayedImageCacheTimer);
+    displayedImageCacheTimer = setTimeout(cacheDisplayedImageMetadata, 100);
+  }
+
+  new MutationObserver(scheduleDisplayedImageCache).observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['src']
+  });
+  document.addEventListener('click', cacheDisplayedImageMetadata, true);
+  document.addEventListener('load', scheduleDisplayedImageCache, true);
+  document.addEventListener('scroll', scheduleDisplayedImageCache, true);
+  window.addEventListener('resize', scheduleDisplayedImageCache);
+  scheduleDisplayedImageCache();
+
   async function applyImg2ImgMetadata(json) {               // <<< NEW
     try {
       if (json?.action !== 'img2img' ||
         !json?.parameters?.image) return;
 
-      const grid = await waitForElement(".display-grid-images");
+      const cached = await displayedImageMetadataPromise;
+      if (!cached || cached.src !== displayedImageSrc) return;
 
-      let img = null;
-      grid.childNodes.forEach(c => {
-        if (c.querySelector("img")) {
-          img = c.querySelector("img");
-        }
-      });
-      if (!img || !img.src) return alert("No image!");
-      const ab = await (await fetch(img.src)).arrayBuffer();
-
-      const raw = extractPngMetadata(ab);
-      const commentChunk = raw.Comment;
-      if (!commentChunk) return;
-
-      const pngMeta = JSON.parse(commentChunk);
+      const { pngMeta } = cached;
 
       /* 1) prompt / uc 반영 */
       if (pngMeta.prompt) json.input = pngMeta.prompt;
@@ -297,13 +346,6 @@
 
       if (isJson) seed32 ??= getSeed32(json);
     }
-
-    console.debug('[Wildcard] FormData parts', parts.map(({ key, value, isJson }) => ({
-      key,
-      type: typeof value === 'string' ? 'string' : value.type,
-      size: typeof value === 'string' ? value.length : value.size,
-      isJson
-    })));
 
     const deepSwap = makeDeepSwap(seed32 != null ? mulberry32(seed32) : Math.random);
     const rewritten = new FormData();

@@ -747,7 +747,7 @@ const tabChk = document.getElementById('triggerTab');
 chrome.storage.local.get('triggerTab', d => { tabChk.checked = !!d.triggerTab; });
 tabChk.addEventListener('change', () => { chrome.storage.local.set({ triggerTab: tabChk.checked }); });
 const spaceChk = document.getElementById('triggerSpace');
-chrome.storage.local.get('triggerSpace', d => { spaceChk.checked = !!d.triggerSpace; });
+chrome.storage.local.get('triggerSpace', d => { spaceChk.checked = d.triggerSpace ?? false; });
 spaceChk.addEventListener('change', () => { chrome.storage.local.set({ triggerSpace: spaceChk.checked }); });
 viewTitle.addEventListener('click', () => {
   if (!currentFolder) {
