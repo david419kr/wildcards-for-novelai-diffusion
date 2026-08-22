@@ -296,6 +296,53 @@
         doublePipePattern.test(text);
     }
 
+    function convertA1111Weights(text) {
+      let result = '';
+      for (let i = 0; i < text.length;) {
+        if (text[i] !== '(') {
+          result += text[i++];
+          continue;
+        }
+
+        let depth = 1;
+        let close = i + 1;
+        while (close < text.length && depth) {
+          if (text[close] === '(') depth++;
+          else if (text[close] === ')') depth--;
+          close++;
+        }
+        if (depth) {
+          result += text.slice(i);
+          break;
+        }
+
+        const inner = text.slice(i + 1, close - 1);
+        let innerDepth = 0;
+        let separator = -1;
+        for (let j = 0; j < inner.length; j++) {
+          if (inner[j] === '(') innerDepth++;
+          else if (inner[j] === ')') innerDepth--;
+          else if (inner[j] === ':' && innerDepth === 0) separator = j;
+        }
+
+        const content = inner.slice(0, separator);
+        const weight = inner.slice(separator + 1);
+        if (separator >= 0 && content.trim() && /^-?\d+(?:\.\d+)?$/.test(weight)) {
+          result += `${weight}::${convertA1111Weights(content)}::`;
+        } else {
+          result += `(${convertA1111Weights(inner)})`;
+        }
+        i = close;
+      }
+      return result;
+    }
+
+    function normalizePromptSyntax(text) {
+      return convertA1111Weights(text
+        .replace(/\\([()])/g, '$1')
+        .replace(/@(?=[A-Za-z0-9])/g, 'artist:'));
+    }
+
     function swap(txt) {
       // 1) __token__ lines → pick one line deterministically using rng()
       let result = txt.replace(/__([A-Za-z0-9_\/\.\-]+)__/g, (match, name) => {
@@ -306,7 +353,6 @@
         }
         if (!raw) return match;
 
-        raw = raw.replace(/\\\(/g, '(').replace(/\\\)/g, ')');
         const lines = raw.split(/\r?\n/).filter(Boolean);
         if (!lines.length) return match;
 
@@ -346,7 +392,7 @@
         current = next;
         iteration++;
       }
-      return current;
+      return normalizePromptSyntax(current);
     }
 
     const deepSwap = o => {

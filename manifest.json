@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Wildcards and Booru Autocomplete for NovelAI Diffusion",
   "description": "Wildcard prompts with optional Danbooru and E621 autocomplete dictionaries.",
-  "version": "3.1.0",
+  "version": "3.1.5",
   "permissions": ["storage"],
   "host_permissions": ["https://image.novelai.net/*"],
   "content_scripts": [
